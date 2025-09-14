@@ -16,6 +16,7 @@ import {
     TableColumnEntityKeysBitField,
     TableColumnEntityOptionsBitField,
 } from './BitField.ts'
+import { PRISMA_TYPES_TO_POSTGRESQL_TYPES } from './constants.ts'
 
 const DEFAULT_SCHEMA = ds as ErdEditorSchema
 
@@ -112,7 +113,7 @@ function processModels(models: readonly DMMF.Model[]) {
 function processFields(tableId: string, columns: readonly DMMF.Field[]) {
     const columnList = new Map<string, TableColumnEntity>()
     for (const column of columns) {
-        // console.log(column)
+        console.log(column)
         const id = genId()
         const options = new TableColumnEntityOptionsBitField()
         if (column.isRequired) options.add('notNull')
@@ -135,7 +136,8 @@ function processFields(tableId: string, columns: readonly DMMF.Field[]) {
             tableId,
             name: column.dbName ?? column.name,
             comment: column.documentation ?? '',
-            dataType: column.type,
+            dataType:
+                PRISMA_TYPES_TO_POSTGRESQL_TYPES[column.type] ?? column.type,
             default: getDefault(column.default),
             options: Number(options.toBigInt()),
             ui: {

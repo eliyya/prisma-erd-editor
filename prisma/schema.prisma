@@ -1,8 +1,8 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// // This is your Prisma schema file,
+// // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+// // Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
     provider = "prisma-client-js"
@@ -20,7 +20,8 @@ datasource db {
 }
 
 model Test {
-    id Int @id @default(autoincrement())
+    id      Int       @id @default(autoincrement())
+    Example Example[]
 }
 
 model Test2 {
@@ -345,4 +346,24 @@ model StudentClasses {
 
     @@id([student_nc, class_id])
     @@map("student_classes")
+}
+
+model Example {
+    id String @id // ID con UUID
+
+    // Tipos comunes
+    stringField   String
+    intField      Int
+    bigIntField   BigInt
+    floatField    Float
+    decimalField  Decimal
+    booleanField  Boolean
+    bytesField    Bytes
+    dateTimeField DateTime
+
+    // Solo PostgreSQL / MySQL
+    jsonField Json
+
+    test_id Int
+    test    Test @relation(fields: [test_id], references: [id])
 }
