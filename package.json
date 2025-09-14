@@ -1,22 +1,31 @@
 {
-  "name": "prisma-erd-editor",
-  "version": "0.0.1",
-  "description": "prisma plugin to create a erd diagram for the erd-editor tool",
-  "main": "index.js",
-  "type": "module",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "author": "",
-  "license": "MIT",
-  "devDependencies": {
-    "@types/node": "24.3.3",
-    "prettier": "^3.6.2",
-    "prisma": "6.16.1",
-    "typescript": "5.9.2"
-  },
-  "dependencies": {
-    "@prisma/client": "^6.16.1",
-    "@prisma/generator-helper": "6.16.1"
-  }
+    "name": "prisma-erd-editor",
+    "version": "0.0.1",
+    "description": "prisma plugin to create a erd diagram for the erd-editor tool",
+    "main": "index.js",
+    "type": "module",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "lint": "eslint . --ext .ts,.js,.json,.md --ignore-path .gitignore",
+        "lint:fix": "eslint . --ext .ts,.js,.json,.md --fix --ignore-path .gitignore",
+        "format": "prettier --write \"**/*.{ts,js,json,md}\" --ignore-path .gitignore",
+        "prepare": "husky install"
+    },
+    "author": "",
+    "license": "MIT",
+    "devDependencies": {
+        "@types/node": "24.3.3",
+        "@typescript-eslint/eslint-plugin": "8.43.0",
+        "@typescript-eslint/parser": "8.43.0",
+        "eslint": "9.35.0",
+        "eslint-config-prettier": "10.1.8",
+        "eslint-plugin-prettier": "5.5.4",
+        "prettier": "3.6.2",
+        "prisma": "6.16.1",
+        "typescript": "5.9.2"
+    },
+    "dependencies": {
+        "@prisma/client": "6.16.1",
+        "@prisma/generator-helper": "6.16.1"
+    }
 }

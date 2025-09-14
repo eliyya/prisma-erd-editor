@@ -2,13 +2,14 @@ import type { DMMF } from '@prisma/generator-helper'
 import { genId } from './id.ts'
 import { Meta } from './Meta.ts'
 import { ERD } from './ERD.ts'
+import { Column } from './Field.ts'
 
 export class Model {
     #id = genId()
     #name = ''
     #comment = ''
-    #columnIds: string[] = []
-    #seqColumnIds: string[] = []
+    #columnIds = new Set<string>()
+    #seqColumnIds = new Set<string>()
     #ui = {
         x: 0,
         y: 0,
@@ -34,7 +35,14 @@ export class Model {
         this.#ui.zIndex = this.#erd.getZIndex()
 
         this.#erd.addModel(this)
-        // processFields(this.id, options.fields)
+        options.fields
+            .filter(f => !f.relationName)
+            .forEach(f => {
+                const column = new Column(this, f)
+                this.#columnIds.add(column.id)
+                this.#seqColumnIds.add(column.id)
+                this.#erd.addColumn(column)
+            })
     }
 
     toJSON() {
@@ -42,8 +50,8 @@ export class Model {
             id: this.#id,
             name: this.#name,
             comment: this.#comment,
-            columnIds: this.#columnIds,
-            seqColumnIds: this.#seqColumnIds,
+            columnIds: Array.from(this.#columnIds),
+            seqColumnIds: Array.from(this.#seqColumnIds),
             ui: this.#ui,
             meta: this.#meta,
         }

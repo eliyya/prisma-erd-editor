@@ -102,6 +102,10 @@ export class BitField<T extends Record<string, bigint>> {
     toBigInt() {
         return this.bitfield
     }
+
+    toNumber() {
+        return Number(this.bitfield)
+    }
 }
 
 // bit value (primaryKey: 1) | (foreignKey: 2)

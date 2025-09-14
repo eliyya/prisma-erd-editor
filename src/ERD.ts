@@ -1,3 +1,5 @@
+import type { DMMF } from '@prisma/generator-helper'
+import { Column } from './Field.ts'
 import { Memo } from './Memo.ts'
 import { Model } from './Model.ts'
 
@@ -30,9 +32,18 @@ export class ERD {
     #memoIds = new Set<string>()
     #modelEntities = new Map<string, Model>()
     #modelIds = new Set<string>()
+    #columnEntities = new Map<string, Column>()
 
     get settings() {
         return { ...this.#settings } as const
+    }
+
+    constructor(
+        enums: Readonly<DMMF.DatamodelEnum[]>,
+        models: Readonly<DMMF.Model[]>,
+    ) {
+        enums.forEach(e => new Memo(this, e))
+        models.forEach(m => new Model(this, m))
     }
 
     getZIndex() {
@@ -49,6 +60,10 @@ export class ERD {
         this.#modelIds.add(model.id)
     }
 
+    addColumn(column: Column) {
+        this.#columnEntities.set(column.id, column)
+    }
+
     toJSON() {
         return {
             $schema: this.#$schema,
@@ -62,7 +77,7 @@ export class ERD {
             },
             collections: {
                 tableEntities: Object.fromEntries(this.#modelEntities),
-                tableColumnEntities: {},
+                tableColumnEntities: Object.fromEntries(this.#columnEntities),
                 relationshipEntities: {},
                 indexEntities: {},
                 indexColumnEntities: {},
