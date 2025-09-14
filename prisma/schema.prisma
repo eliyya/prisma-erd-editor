@@ -1,0 +1,338 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+    provider        = "prisma-client-js"
+}
+
+generator erdeditor {
+    provider = "node src/index.ts"
+    format   = "json"
+}
+
+datasource db {
+    provider  = "postgresql"
+    url       = env("DATABASE_URL")
+    directUrl = env("DIRECT_URL")
+}
+
+model Role {
+    id          String @id @default(dbgenerated("snowflake()"))
+    name        String @unique
+    permissions BigInt 
+    User        User[]
+}
+
+model User {
+    id               String   @id @default(dbgenerated("snowflake()"))
+    name             String
+    email            String
+    email_verified   Boolean  @default(true)
+    image            String?
+    created_at       DateTime @default(now())
+    username         String   @unique
+    status           STATUS   @default(ACTIVE)
+    updated_at       DateTime @updatedAt
+    display_username String?
+    role_id          String
+
+    role Role @relation(fields: [role_id], references: [id])
+
+    practices          Practice[]
+    practice_registers Practice[] @relation("practice_registers")
+    classes            Class[]
+    issues             Issue[]
+    comments           Comment[]
+    sessions           Session[]
+    accounts           Account[]
+
+    @@unique([email])
+    @@map("users")
+}
+
+model Session {
+    id         String   @id @default(dbgenerated("snowflake()"))
+    expires_at DateTime
+    token      String
+    created_at DateTime
+    updated_at DateTime @updatedAt
+    ip_address String?
+    user_agent String?
+    user_id    String
+    user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+    @@unique([token])
+    @@map("session")
+}
+
+model Account {
+    id                       String    @id @default(dbgenerated("snowflake()"))
+    account_id               String
+    provider_id              String
+    user_id                  String
+    user                     User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+    access_token             String?
+    refresh_token            String?
+    id_token                 String?
+    access_token_expires_at  DateTime?
+    refresh_token_expires_at DateTime?
+    scope                    String?
+    password                 String?
+    created_at               DateTime
+    updated_at               DateTime  @updatedAt
+
+    @@map("account")
+}
+
+model Verification {
+    id         String    @id @default(dbgenerated("snowflake()"))
+    identifier String
+    value      String
+    expires_at DateTime
+    created_at DateTime?
+    updated_at DateTime?
+
+    @@map("verification")
+}
+
+model Subject {
+    id             String   @id @default(dbgenerated("snowflake()"))
+    name           String @unique
+    created_at     DateTime @default(now())
+    practice_hours Int
+    theory_hours   Int
+    updated_at     DateTime @updatedAt
+    status         STATUS   @default(ACTIVE)
+
+    classes Class[]
+
+    @@map("subjects")
+}
+
+model Class {
+    id         String   @id @default(dbgenerated("snowflake()"))
+    subject_id String
+    teacher_id String
+    career_id  String
+    group      Int      @default(0)
+    semester   Int      @default(0)
+    status     STATUS   @default(ACTIVE)
+    created_at DateTime @default(now())
+    updated_at DateTime @updatedAt
+
+    subject        Subject          @relation(fields: [subject_id], references: [id])
+    teacher        User             @relation(fields: [teacher_id], references: [id])
+    career         Career           @relation(fields: [career_id], references: [id])
+    StudentClasses StudentClasses[]
+    Practice       Practice[]
+
+    @@unique([subject_id, teacher_id, group, semester, career_id], name: "unique_class")
+    @@map("classes")
+}
+
+enum LABORATORY_TYPE {
+    COMPUTER_CENTER
+    LABORATORY
+}
+
+model Laboratory {
+    id         String          @id @default(dbgenerated("snowflake()"))
+    created_at DateTime        @default(now())
+    name       String          @unique
+    open_hour  Int
+    close_hour Int
+    type       LABORATORY_TYPE @default(LABORATORY)
+    status     STATUS          @default(ACTIVE)
+    updated_at DateTime        @updatedAt
+
+    practices Practice[]
+    machines  Machine[]
+    visits    Visit[]
+
+    @@map("laboratories")
+}
+
+model Practice {
+    id            String   @id @default(dbgenerated("snowflake()"))
+    teacher_id    String
+    topic         String
+    name          String
+    created_at    DateTime @default(now())
+    students      Int?
+    registered_by String
+    laboratory_id String
+    observations  String?
+    class_id      String?
+    updated_at    DateTime @updatedAt
+    starts_at     DateTime
+    ends_at       DateTime
+
+    class              Class?             @relation(fields: [class_id], references: [id])
+    teacher            User               @relation(fields: [teacher_id], references: [id])
+    registered_by_user User               @relation("practice_registers", fields: [registered_by], references: [id])
+    laboratory         Laboratory         @relation(fields: [laboratory_id], references: [id])
+    software_practices SoftwarePractice[]
+
+    @@map("practices")
+}
+
+model Software {
+    id         String   @id @default(dbgenerated("snowflake()"))
+    name       String
+    updated_at DateTime @updatedAt
+    created_at DateTime @default(now())
+
+    software_practices SoftwarePractice[]
+    software_machines  SoftwareMachine[]
+
+    @@map("software")
+}
+
+model SoftwarePractice {
+    software_id String
+    practice_id String
+
+    software Software @relation(fields: [software_id], references: [id], onDelete: Restrict)
+    practice Practice @relation(fields: [practice_id], references: [id], onDelete: Cascade)
+
+    @@id([software_id, practice_id])
+    @@map("software_practices")
+}
+
+model Career {
+    id         String   @id @default(dbgenerated("snowflake()"))
+    name       String   @unique
+    created_at DateTime @default(now())
+    updated_at DateTime @updatedAt
+    status     STATUS   @default(ACTIVE)
+    alias      String?
+
+    students Student[]
+    classes  Class[]
+
+    @@map("careers")
+}
+
+model Student {
+    nc         String   @id
+    lastname   String
+    firstname  String
+    semester   Int      @default(1)
+    group      Int      @default(0)
+    created_at DateTime @default(now())
+    career_id  String
+    updated_at DateTime @updatedAt
+    status     STATUS   @default(ACTIVE)
+
+    career          Career           @relation(fields: [career_id], references: [id])
+    visits          Visit[]
+    student_classes StudentClasses[]
+
+    @@map("students")
+}
+
+model Visit {
+    id            String    @id @default(dbgenerated("snowflake()"))
+    created_at    DateTime  @default(now())
+    exit_at       DateTime?
+    student_nc    String
+    laboratory_id String
+    machine_id    String?
+    updated_at    DateTime  @updatedAt
+
+    student    Student    @relation(fields: [student_nc], references: [nc])
+    laboratory Laboratory @relation(fields: [laboratory_id], references: [id])
+    machine    Machine?   @relation(fields: [machine_id], references: [id])
+
+    @@map("visits")
+}
+
+enum MACHINE_STATUS {
+    AVAILABLE
+    MAINTENANCE
+    IN_USE
+    OUT_OF_SERVICE
+}
+
+enum STATUS {
+    ACTIVE
+    ARCHIVED
+    DELETED
+}
+
+model Machine {
+    id            String         @id @default(dbgenerated("snowflake()"))
+    number        Int
+    status        MACHINE_STATUS @default(AVAILABLE)
+    processor     String
+    ram           String
+    storage       String
+    description   String         @default("")
+    laboratory_id String?
+    created_at    DateTime       @default(now())
+    serie         String?        @unique
+    updated_at    DateTime       @updatedAt
+
+    laboratory        Laboratory?       @relation(fields: [laboratory_id], references: [id])
+    issues            Issue[]
+    visits            Visit[]
+    software_machines SoftwareMachine[]
+
+    @@map("machines")
+}
+
+model SoftwareMachine {
+    software_id String
+    machine_id  String
+
+    software Software @relation(fields: [software_id], references: [id])
+    machine  Machine  @relation(fields: [machine_id], references: [id])
+
+    @@id([software_id, machine_id])
+    @@map("software_machines")
+}
+
+model Issue {
+    id         String    @id @default(dbgenerated("snowflake()"))
+    created_at DateTime  @default(now())
+    comment    String
+    machine_id String
+    closed_at  DateTime?
+    user_id    String
+    updated_at DateTime  @updatedAt
+
+    machine  Machine   @relation(fields: [machine_id], references: [id])
+    user     User      @relation(fields: [user_id], references: [id])
+    comments Comment[]
+
+    @@map("issue")
+}
+
+model Comment {
+    id         String   @id @default(dbgenerated("snowflake()"))
+    created_at DateTime @default(now())
+    content    String
+
+    user_id    String
+    issue_id   String
+    updated_at DateTime @updatedAt
+
+    user  User  @relation(fields: [user_id], references: [id])
+    issue Issue @relation(fields: [issue_id], references: [id])
+
+    @@map("comment")
+}
+
+model StudentClasses {
+    student_nc String
+    class_id   String
+
+    student Student @relation(fields: [student_nc], references: [nc])
+    class   Class   @relation(fields: [class_id], references: [id])
+
+    @@id([student_nc, class_id])
+    @@map("student_classes")
+}

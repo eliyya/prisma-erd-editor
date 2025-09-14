@@ -1,0 +1,21 @@
+{
+  "name": "prisma-erd-editor",
+  "version": "0.0.1",
+  "description": "prisma plugin to create a erd diagram for the erd-editor tool",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "24.3.3",
+    "prisma": "6.16.1",
+    "typescript": "5.9.2"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.16.1",
+    "@prisma/generator-helper": "6.16.1"
+  }
+}
