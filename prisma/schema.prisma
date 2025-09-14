@@ -5,7 +5,7 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-    provider        = "prisma-client-js"
+    provider = "prisma-client-js"
 }
 
 generator erdeditor {
@@ -19,10 +19,11 @@ datasource db {
     directUrl = env("DIRECT_URL")
 }
 
+/// User model...
 model Role {
     id          String @id @default(dbgenerated("snowflake()"))
     name        String @unique
-    permissions BigInt 
+    permissions BigInt
     User        User[]
 }
 
@@ -100,7 +101,7 @@ model Verification {
 
 model Subject {
     id             String   @id @default(dbgenerated("snowflake()"))
-    name           String @unique
+    name           String   @unique
     created_at     DateTime @default(now())
     practice_hours Int
     theory_hours   Int

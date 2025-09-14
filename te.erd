@@ -35,10 +35,7 @@
     ],
     "relationshipIds": [],
     "indexIds": [],
-    "memoIds": [
-      "cSndWMFMs3gfUtElJHsYP",
-      "1zi92EW48HBuelZL-3_-c"
-    ]
+    "memoIds": []
   },
   "collections": {
     "tableEntities": {
@@ -46,59 +43,51 @@
         "id": "r9NohBARMmqUpopnzzXlU",
         "name": "TableName",
         "comment": "",
-        "columnIds": [],
-        "seqColumnIds": [],
+        "columnIds": [
+          "o3v0ooqv8h1Jcs4JioDtS"
+        ],
+        "seqColumnIds": [
+          "o3v0ooqv8h1Jcs4JioDtS"
+        ],
         "ui": {
-          "x": 211,
-          "y": 347,
+          "x": 185,
+          "y": 211,
           "zIndex": 4,
           "widthName": 61,
           "widthComment": 60,
           "color": ""
         },
         "meta": {
-          "updateAt": 1757808898478,
+          "updateAt": 1757809783936,
           "createAt": 1757808890863
         }
       }
     },
-    "tableColumnEntities": {},
+    "tableColumnEntities": {
+      "o3v0ooqv8h1Jcs4JioDtS": {
+        "id": "o3v0ooqv8h1Jcs4JioDtS",
+        "tableId": "r9NohBARMmqUpopnzzXlU",
+        "name": "col",
+        "comment": "",
+        "dataType": "typ",
+        "default": "",
+        "options": 0,
+        "ui": {
+          "keys": 0,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1757809789407,
+          "createAt": 1757809783936
+        }
+      }
+    },
     "relationshipEntities": {},
     "indexEntities": {},
     "indexColumnEntities": {},
-    "memoEntities": {
-      "cSndWMFMs3gfUtElJHsYP": {
-        "id": "cSndWMFMs3gfUtElJHsYP",
-        "value": "Data\n\ntest\ntext",
-        "ui": {
-          "x": 200,
-          "y": 100,
-          "zIndex": 2,
-          "width": 116,
-          "height": 100,
-          "color": ""
-        },
-        "meta": {
-          "updateAt": 1757807619005,
-          "createAt": 1757807612962
-        }
-      },
-      "1zi92EW48HBuelZL-3_-c": {
-        "id": "1zi92EW48HBuelZL-3_-c",
-        "value": "Data\n\nnnew",
-        "ui": {
-          "x": 448,
-          "y": 138,
-          "zIndex": 3,
-          "width": 116,
-          "height": 100,
-          "color": ""
-        },
-        "meta": {
-          "updateAt": 1757808437572,
-          "createAt": 1757808431993
-        }
-      }
-    }
+    "memoEntities": {}
   }
 }
