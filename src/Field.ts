@@ -52,6 +52,7 @@ export class Column {
         }
         if (data.isId) {
             this.#options.add('primaryKey')
+            this.#options.add('unique')
             this.#ui.keys.add('primaryKey')
         }
         this.#default = this.#getDefault(data.default)
