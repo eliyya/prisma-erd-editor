@@ -21,7 +21,7 @@ datasource db {
 
 model Test {
     id      Int       @id @default(autoincrement())
-    Example Example[]
+    example Example[]
 }
 
 model Test2 {
