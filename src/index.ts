@@ -1,23 +1,21 @@
 #!/usr/bin/env node
 import pgh from '@prisma/generator-helper'
 import { writeFile } from 'node:fs/promises'
-import { dirname } from 'node:path'
-import { mkdir } from 'node:fs'
 import ds from './default-schema.json' with { type: 'json' }
 import type { ErdEditorSchema, MemoEntity, TableEntity } from './types.ts'
 import { genId } from './id.ts'
 
 const defaultSchema = ds as ErdEditorSchema
 pgh.generatorHandler({
-    onManifest: (gc) => {
+    onManifest: gc => {
         return {
             version: '0.0.1',
             defaultOutput: 'schema.erd',
         }
     },
-    onGenerate: async ({generator,dmmf}) => {
-        const {datamodel,mappings,schema} = dmmf
-        const {enums, models, ...datamodelRest} = datamodel
+    onGenerate: async ({ generator, dmmf }) => {
+        const { datamodel, mappings, schema } = dmmf
+        const { enums, models, ...datamodelRest } = datamodel
         const enumList = new Map<string, MemoEntity>()
         let zIndex = 2
         let x = 0
@@ -28,24 +26,23 @@ pgh.generatorHandler({
             enumList.set(id, {
                 id,
                 ui: {
-                    x: x*100,
+                    x: x * 100,
                     y: y,
                     zIndex: zIndex++,
                     width: 100,
                     height: 100,
-                    color: "",
+                    color: '',
                 },
                 meta: {
                     updateAt: Date.now(),
                     createAt: Date.now(),
                 },
-                value: `${enum_.dbName??enum_.name}\n\n${enum_.values.map((v) => v.dbName??v.name).join('\n')}`
+                value: `${enum_.dbName ?? enum_.name}\n\n${enum_.values.map(v => v.dbName ?? v.name).join('\n')}`,
             })
         }
         defaultSchema.collections.memoEntities = Object.fromEntries(enumList)
         defaultSchema.doc.memoIds = Array.from(enumList.keys())
 
-        
         // const modelList = new Map<string, TableEntity>()
         // for (const model of models) {
         //     console.log(model)
@@ -71,7 +68,10 @@ pgh.generatorHandler({
         //       })
         //     break
         // }
-        
-        writeFile(generator.output!.value as string, JSON.stringify(defaultSchema))
+
+        writeFile(
+            generator.output!.value as string,
+            JSON.stringify(defaultSchema),
+        )
     },
 })
