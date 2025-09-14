@@ -1,6 +1,6 @@
 export interface ErdEditorSchema {
     $schema?: string
-    version: "3.0.0"
+    version: '3.0.0'
     settings: Settings
     doc: Doc
     collections: {
@@ -22,7 +22,12 @@ export interface Settings {
     show: number
     database?: number
     databaseName?: string
-    canvasType: "ERD" | "@dineug/erd-editor/builtin-visualization" | "@dineug/erd-editor/builtin-schema-sql" | "@dineug/erd-editor/builtin-generator-code" | "settings"
+    canvasType:
+        | 'ERD'
+        | '@dineug/erd-editor/builtin-visualization'
+        | '@dineug/erd-editor/builtin-schema-sql'
+        | '@dineug/erd-editor/builtin-generator-code'
+        | 'settings'
     language: number
     tableNameCase: number
     columnNameCase: number
@@ -57,7 +62,12 @@ export interface TableEntity {
     }
     meta: EntityMeta
 }
-
+export const TableColumnEntityOptionsBit = {
+    autoIncrement: 1,
+    primaryKey: 2,
+    unique: 4,
+    notNull: 8,
+}
 export interface TableColumnEntity {
     id: string
     tableId: string
@@ -65,6 +75,7 @@ export interface TableColumnEntity {
     comment: string
     dataType: string
     default: string
+    // bit value (autoIncrement: 1) | (primaryKey: 2) | (unique: 4) | (notNull: 8)
     options: number
     ui: {
         keys: number

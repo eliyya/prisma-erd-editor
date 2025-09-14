@@ -19,6 +19,15 @@ datasource db {
     directUrl = env("DIRECT_URL")
 }
 
+model Test {
+    id Int @id @default(autoincrement())
+}
+
+model Test2 {
+    id      Int @id @default(autoincrement())
+    test_id Int
+}
+
 /// User model...
 model Role {
     id          String @id @default(dbgenerated("snowflake()"))

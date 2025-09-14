@@ -10,12 +10,12 @@
     "show": 510,
     "database": 16,
     "databaseName": "",
-    "canvasType": "ERD",
+    "canvasType": "settings",
     "language": 1,
     "tableNameCase": 4,
     "columnNameCase": 2,
     "bracketType": 1,
-    "relationshipDataTypeSync": true,
+    "relationshipDataTypeSync": false,
     "relationshipOptimization": false,
     "columnOrder": [
       1,
@@ -71,16 +71,16 @@
         "comment": "",
         "dataType": "typ",
         "default": "",
-        "options": 0,
+        "options": 10,
         "ui": {
-          "keys": 0,
+          "keys": 1,
           "widthName": 60,
           "widthComment": 60,
           "widthDataType": 60,
           "widthDefault": 60
         },
         "meta": {
-          "updateAt": 1757809789407,
+          "updateAt": 1757814648933,
           "createAt": 1757809783936
         }
       }
