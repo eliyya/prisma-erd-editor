@@ -6,8 +6,8 @@
     "type": "module",
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1",
-        "lint": "eslint . --ext .ts,.js,.json,.md --ignore-path .gitignore",
-        "lint:fix": "eslint . --ext .ts,.js,.json,.md --fix --ignore-path .gitignore",
+        "lint": "eslint . --no-eslintrc -c eslint.config.mjs",
+        "lint:fix": "eslint . --no-eslintrc -c eslint.config.mjs --fix",
         "format": "prettier --write \"**/*.{ts,js,json,md}\" --ignore-path .gitignore",
         "prepare": "husky install"
     },

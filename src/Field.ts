@@ -6,6 +6,7 @@ import {
 import { genId } from './id.ts'
 import { Meta } from './Meta.ts'
 import { Model } from './Model.ts'
+import { PRISMA_TYPES_TO_POSTGRESQL_TYPES } from './constants.ts'
 
 export class Column {
     #id = genId()
@@ -22,18 +23,24 @@ export class Column {
         widthDefault: 60,
     }
     #meta = new Meta()
+    #model: Model
+    #data: Readonly<DMMF.Field>
 
     get id() {
         return this.#id
     }
-    #model: Model
-    #data: Readonly<DMMF.Field>
+
+    get name() {
+        return this.#name
+    }
 
     constructor(model: Model, data: Readonly<DMMF.Field>) {
         this.#model = model
         this.#data = data
         this.#name = data.dbName ?? data.name
         this.#comment = data.documentation ?? ''
+        this.#dataType =
+            PRISMA_TYPES_TO_POSTGRESQL_TYPES[data.type] ?? data.type
 
         if (data.isRequired) this.#options.add('notNull')
         if (data.isUnique) this.#options.add('unique')
@@ -43,7 +50,10 @@ export class Column {
         ) {
             this.#options.add('autoIncrement')
         }
-        if (data.isId) this.#options.add('primaryKey')
+        if (data.isId) {
+            this.#options.add('primaryKey')
+            this.#ui.keys.add('primaryKey')
+        }
         this.#default = this.#getDefault(data.default)
     }
 
@@ -53,6 +63,16 @@ export class Column {
         if (!('name' in field)) return false
         if (!('args' in field)) return false
         return true
+    }
+
+    setForeignKey() {
+        console.log('setForeignKey', this.name, this.#ui.keys)
+        this.#ui.keys.add('foreignKey')
+        console.log('setForeignKey', this.name, this.#ui.keys)
+    }
+
+    removeForeignKey() {
+        this.#ui.keys.remove('foreignKey')
     }
 
     #getDefault(def: DMMF.Field['default']) {
@@ -77,6 +97,7 @@ export class Column {
     toJSON() {
         return {
             id: this.#id,
+            tableId: this.#model.id,
             name: this.#name,
             comment: this.#comment,
             dataType: this.#dataType,

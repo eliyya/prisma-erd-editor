@@ -20,6 +20,9 @@ pgh.generatorHandler({
 
         const schema = new ERD(dmmf.datamodel.enums, dmmf.datamodel.models)
 
-        writeFile(generator.output!.value as string, JSON.stringify(schema))
+        writeFile(
+            generator.output!.value as string,
+            JSON.stringify(schema.build()),
+        )
     },
 })
