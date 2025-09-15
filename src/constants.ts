@@ -1,16 +1,13 @@
-const PRISMA_TYPES = [
-    'String',
-    'Int',
-    'BigInt',
-    'Float',
-    'Decimal',
-    'Boolean',
-    'Bytes',
-    'DateTime',
-    'Json',
-] as const
-
-type PrismaTypes = (typeof PRISMA_TYPES)[number]
+export type PrismaTypes =
+    | 'String'
+    | 'Int'
+    | 'BigInt'
+    | 'Float'
+    | 'Decimal'
+    | 'Boolean'
+    | 'Bytes'
+    | 'DateTime'
+    | 'Json'
 
 export const POSTGRESQL_TYPES = [
     // Números

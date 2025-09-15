@@ -1,8 +1,9 @@
 import type { DMMF } from '@prisma/generator-helper'
-import { genId } from './id.ts'
-import { Meta } from './Meta.ts'
+
 import { ERD } from './ERD.ts'
 import { Column } from './Field.ts'
+import { genId } from './id.ts'
+import { Meta } from './Meta.ts'
 import { Relation } from './Relation.ts'
 
 export class Model {

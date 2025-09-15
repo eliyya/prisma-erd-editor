@@ -18,7 +18,7 @@ export class BitField<T extends Record<string, bigint>> {
         flags: K,
     ): bigint {
         if (bits instanceof BitField) return bits.bitfield
-        if (typeof bits === 'string') return flags[bits]
+        if (typeof bits === 'string') return flags[bits] || 0n
         if (Array.isArray(bits))
             return bits.reduce((acc, key) => acc | (flags[key] || 0n), 0n)
         if (typeof bits === 'bigint') return bits
@@ -117,8 +117,8 @@ export const TableColumnEntityKeysFlags = {
 export class TableColumnEntityKeysBitField extends BitField<
     typeof TableColumnEntityKeysFlags
 > {
-    static Flags = TableColumnEntityKeysFlags
-    static DefaultBit = 0n
+    static override Flags = TableColumnEntityKeysFlags
+    static override DefaultBit = 0n
 }
 
 // bit value (autoIncrement: 1) | (primaryKey: 2) | (unique: 4) | (notNull: 8)
@@ -132,6 +132,6 @@ export const TableColumnEntityOptionsFlags = {
 export class TableColumnEntityOptionsBitField extends BitField<
     typeof TableColumnEntityOptionsFlags
 > {
-    static Flags = TableColumnEntityOptionsFlags
-    static DefaultBit = 0n
+    static override Flags = TableColumnEntityOptionsFlags
+    static override DefaultBit = 0n
 }

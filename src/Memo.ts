@@ -1,4 +1,5 @@
 import type { DMMF } from '@prisma/generator-helper'
+
 import { ERD } from './ERD.ts'
 import { genId } from './id.ts'
 import { Meta } from './Meta.ts'
@@ -25,7 +26,7 @@ export class Memo {
     constructor(erd: ERD, options: Readonly<DMMF.DatamodelEnum>) {
         this.#erd = erd
         this.#options = options
-        this.#value = `${options.dbName ?? options.name}\n\n${options.values.map(v => v.dbName ?? v.name).join('\n')}`
+        this.#value = `${this.#options.dbName ?? this.#options.name}\n\n${this.#options.values.map(v => v.dbName ?? v.name).join('\n')}`
         this.#ui.zIndex = this.#erd.getZIndex()
         erd.addMemo(this)
     }

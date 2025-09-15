@@ -1,4 +1,5 @@
 import type { DMMF } from '@prisma/generator-helper'
+
 import { Column } from './Field.ts'
 import { Memo } from './Memo.ts'
 import { Model } from './Model.ts'

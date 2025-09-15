@@ -1,12 +1,16 @@
 import type { DMMF } from '@prisma/generator-helper'
+
 import {
     TableColumnEntityKeysBitField,
     TableColumnEntityOptionsBitField,
 } from './BitField.ts'
+import {
+    PRISMA_TYPES_TO_POSTGRESQL_TYPES,
+    type PrismaTypes,
+} from './constants.ts'
 import { genId } from './id.ts'
 import { Meta } from './Meta.ts'
 import { Model } from './Model.ts'
-import { PRISMA_TYPES_TO_POSTGRESQL_TYPES } from './constants.ts'
 
 export class Column {
     #id = genId()
@@ -37,10 +41,11 @@ export class Column {
     constructor(model: Model, data: Readonly<DMMF.Field>) {
         this.#model = model
         this.#data = data
-        this.#name = data.dbName ?? data.name
-        this.#comment = data.documentation ?? ''
+        this.#name = this.#data.dbName ?? data.name
+        this.#comment = this.#data.documentation ?? ''
         this.#dataType =
-            PRISMA_TYPES_TO_POSTGRESQL_TYPES[data.type] ?? data.type
+            PRISMA_TYPES_TO_POSTGRESQL_TYPES[data.type as PrismaTypes] ??
+            data.type
 
         if (data.isRequired) this.#options.add('notNull')
         if (data.isUnique) this.#options.add('unique')
@@ -67,9 +72,7 @@ export class Column {
     }
 
     setForeignKey() {
-        console.log('setForeignKey', this.name, this.#ui.keys)
         this.#ui.keys.add('foreignKey')
-        console.log('setForeignKey', this.name, this.#ui.keys)
     }
 
     removeForeignKey() {

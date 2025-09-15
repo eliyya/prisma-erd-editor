@@ -12,13 +12,12 @@ const alphabet =
 const defaultSize = 21
 
 export function genId(size = defaultSize): string & { __brand: 'id' } {
+    const bytes = randomBytes(size)
     let id = ''
-    let bytes = randomBytes(size)
-    let i = size
 
-    while (i--) {
+    while (size--) {
         // Cualquier índice fuera de rango se descarta (se ignora).
-        id += alphabet[bytes[i] & 63]
+        id += alphabet[bytes[size]! & 63]
     }
 
     return id as string & { __brand: 'id' }

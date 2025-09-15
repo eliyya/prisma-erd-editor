@@ -1,5 +1,5 @@
 import type { DMMF } from '@prisma/generator-helper'
-import { ERD } from './ERD.ts'
+
 import { genId } from './id.ts'
 import { Meta } from './Meta.ts'
 import { Model } from './Model.ts'
@@ -24,10 +24,10 @@ export class Relation {
         direction: 1,
     }
     #meta = new Meta()
-    #from: Readonly<DMMF.Field>
-    #fromModel: Model
-    #to: Readonly<DMMF.Field>
-    #toModel: Model
+    #from?: Readonly<DMMF.Field>
+    #fromModel?: Model
+    #to?: Readonly<DMMF.Field>
+    #toModel?: Model
     #relationName = ''
 
     get id() {
@@ -74,18 +74,19 @@ export class Relation {
     }
 
     #analyze() {
+        if (!this.#from || !this.#to || !this.#fromModel || !this.#toModel)
+            return
         this.#start.tableId = this.#fromModel.id
         this.#end.tableId = this.#toModel.id
 
         const [fromFieldName] = this.#from.relationFromFields!
-        const fromColumn = this.#fromModel.erd.findColumn(fromFieldName)!
+        const fromColumn = this.#fromModel.erd.findColumn(fromFieldName!)!
         fromColumn.setForeignKey()
-        console.log(fromColumn.toJSON())
 
         this.#start.columnIds.add(fromColumn.id)
 
         const [toFieldName] = this.#from.relationToFields!
-        const toColumn = this.#toModel.erd.findColumn(toFieldName)!
+        const toColumn = this.#toModel.erd.findColumn(toFieldName!)!
         this.#end.columnIds.add(toColumn.id)
 
         // relationshipType
