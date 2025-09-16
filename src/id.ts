@@ -14,11 +14,7 @@ const defaultSize = 21
 export function genId(size = defaultSize): string & { __brand: 'id' } {
     const bytes = randomBytes(size)
     let id = ''
-
-    while (size--) {
-        // Cualquier índice fuera de rango se descarta (se ignora).
-        id += alphabet[bytes[size]! & 63]
-    }
-
+    // eslint-disable-next-line security/detect-object-injection
+    while (size--) id += alphabet.charAt(bytes[size]! & 63)
     return id as string & { __brand: 'id' }
 }
