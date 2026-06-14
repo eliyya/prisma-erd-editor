@@ -1,28 +1,41 @@
 {
     "name": "prisma-erd-editor",
-    "version": "0.0.1",
-    "description": "prisma plugin to create a erd diagram for the erd-editor tool",
-    "main": "index.js",
+    "version": "0.1.0",
+    "description": "Prisma generator for ERD Editor compatible .erd diagrams",
     "type": "module",
+    "main": "./dist/api.js",
+    "types": "./dist/api.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/api.d.ts",
+            "import": "./dist/api.js"
+        }
+    },
+    "bin": {
+        "prisma-erd-editor": "./dist/index.js"
+    },
+    "files": [
+        "dist",
+        "README.md",
+        "LICENSE"
+    ],
     "scripts": {
-        "test": "echo \"Error: no test specified\" && exit 1",
-        "lint": "eslint . --no-eslintrc -c eslint.config.mjs",
-        "lint:fix": "eslint . --no-eslintrc -c eslint.config.mjs --fix",
+        "build": "tsc",
+        "test": "npm run build && node --test",
+        "lint": "eslint .",
+        "lint:fix": "eslint . --fix",
         "format": "prettier --write \"**/*.{ts,js,json,md}\" --ignore-path .gitignore",
-        "prepare": "husky install"
+        "prepublishOnly": "npm run lint && npm test"
     },
     "author": "",
     "license": "MIT",
     "devDependencies": {
         "@eslint/js": "9.35.0",
         "@types/node": "24.3.3",
-        "@typescript-eslint/eslint-plugin": "8.43.0",
-        "@typescript-eslint/parser": "8.43.0",
         "eslint": "9.35.0",
         "eslint-config-prettier": "10.1.8",
         "eslint-import-resolver-typescript": "4.4.4",
         "eslint-plugin-import": "2.32.0",
-        "eslint-plugin-node": "11.1.0",
         "eslint-plugin-prettier": "5.5.4",
         "eslint-plugin-security": "3.0.1",
         "prettier": "3.6.2",
@@ -31,8 +44,9 @@
         "typescript-eslint": "8.43.0"
     },
     "dependencies": {
-        "@eliyya/flagged-bitfield": "1.0.0",
-        "@prisma/client": "6.16.1",
         "@prisma/generator-helper": "6.16.1"
+    },
+    "engines": {
+        "node": ">=20.19"
     }
 }

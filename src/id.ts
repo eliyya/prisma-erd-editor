@@ -1,20 +1,8 @@
-/**
- * This code is inspired by:
- * https://raw.githubusercontent.com/dineug/erd-editor/refs/heads/main/packages/shared/src/nanoid.ts
- * https://raw.githubusercontent.com/ai/nanoid/refs/heads/main/index.js
- * https://raw.githubusercontent.com/ai/nanoid/refs/heads/main/url-alphabet/index.js
- */
+import { createHash } from 'node:crypto'
 
-import { randomBytes } from 'node:crypto'
-
-const alphabet =
-    'useandom-26T198340PX75pxJACKVERYMINDBUSHWOLF_GQZbfghjklqvwyzrict'
-const defaultSize = 21
-
-export function genId(size = defaultSize): string & { __brand: 'id' } {
-    const bytes = randomBytes(size)
-    let id = ''
-    // eslint-disable-next-line security/detect-object-injection
-    while (size--) id += alphabet.charAt(bytes[size]! & 63)
-    return id as string & { __brand: 'id' }
+export function genId(namespace: string): string {
+    return createHash('sha256')
+        .update(`prisma-erd-editor:${namespace}`)
+        .digest('base64url')
+        .slice(0, 21)
 }

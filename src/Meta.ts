@@ -1,19 +1,18 @@
+import type { EntityMeta } from './types.js'
+
 export class Meta {
-    #updateAt = Date.now()
-    #createAt = Date.now()
+    readonly updateAt: number
+    readonly createAt: number
 
-    get updateAt() {
-        return this.#updateAt
+    constructor(previous?: EntityMeta, now = Date.now()) {
+        this.updateAt = now
+        this.createAt = previous?.createAt ?? now
     }
 
-    get createAt() {
-        return this.#createAt
-    }
-
-    toJSON() {
+    toJSON(): EntityMeta {
         return {
-            updateAt: this.#updateAt,
-            createAt: this.#createAt,
+            updateAt: this.updateAt,
+            createAt: this.createAt,
         }
     }
 }

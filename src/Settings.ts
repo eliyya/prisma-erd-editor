@@ -1,73 +1,53 @@
+import { DATABASE_BY_PROVIDER } from './constants.js'
+import type { Settings as SettingsSchema } from './types.js'
+
 export class Settings {
-    #width = 2000
-    #height = 2000
-    #scrollTop = 0
-    #scrollLeft = 0
-    #zoomLevel = 1
-    #show = 431
-    #database = 4
-    #databaseName = ''
-    #canvasType = 'ERD'
-    #language = 16
-    #tableNameCase = 4
-    #columnNameCase = 2
-    #bracketType = 1
-    #relationshipDataTypeSync = true
-    #relationshipOptimization = false
-    #columnOrder = [1, 2, 4, 8, 16, 32, 64]
-    #maxWidthComment = -1
-    #ignoreSaveSettings = 0
+    readonly width: number
+    readonly height: number
+    readonly scrollTop: number
+    readonly scrollLeft: number
+    readonly zoomLevel: number
+    readonly show = 511
+    readonly database: number
+    readonly databaseName: string
+    readonly canvasType = 'ERD' as const
+    readonly language = 16
+    readonly tableNameCase = 4
+    readonly columnNameCase = 2
+    readonly bracketType = 1
+    readonly relationshipDataTypeSync = true
+    readonly relationshipOptimization = false
+    readonly columnOrder = [1, 2, 4, 8, 16, 32, 64]
+    readonly maxWidthComment = -1
+    readonly ignoreSaveSettings = 3
 
-    get width() {
-        return this.#width
+    constructor(
+        provider: string,
+        previous?: Partial<SettingsSchema>,
+        dimensions = { width: 2000, height: 2000 },
+    ) {
+        this.width = clamp(
+            Math.max(previous?.width ?? 0, dimensions.width),
+            2000,
+            20000,
+        )
+        this.height = clamp(
+            Math.max(previous?.height ?? 0, dimensions.height),
+            2000,
+            20000,
+        )
+        this.scrollTop = previous?.scrollTop ?? 0
+        this.scrollLeft = previous?.scrollLeft ?? 0
+        this.zoomLevel = clamp(previous?.zoomLevel ?? 1, 0.1, 1)
+        this.database = DATABASE_BY_PROVIDER[provider] ?? 16
+        this.databaseName = previous?.databaseName ?? ''
     }
 
-    get height() {
-        return this.#height
+    toJSON(): SettingsSchema {
+        return { ...this }
     }
+}
 
-    get zoomLevel() {
-        return this.#zoomLevel
-    }
-
-    set width(width: number) {
-        if (width < 2000) this.#width = 2000
-        if (width > 20000) this.#width = 20000
-        else this.#width = width
-    }
-
-    set height(height: number) {
-        if (height < 2000) this.#height = 2000
-        if (height > 20000) this.#height = 20000
-        else this.#height = height
-    }
-
-    set zoomLevel(zoomLevel: number) {
-        if (zoomLevel < 0.1) this.#zoomLevel = 0.1
-        if (zoomLevel > 1) this.#zoomLevel = 1
-        else this.#zoomLevel = zoomLevel
-    }
-
-    toJSON() {
-        return {
-            width: this.#width,
-            height: this.#height,
-            scrollTop: this.#scrollTop,
-            scrollLeft: this.#scrollLeft,
-            zoomLevel: this.#zoomLevel,
-            show: this.#show,
-            database: this.#database,
-            databaseName: this.#databaseName,
-            canvasType: this.#canvasType,
-            language: this.#language,
-            tableNameCase: this.#tableNameCase,
-            columnNameCase: this.#columnNameCase,
-            bracketType: this.#bracketType,
-            relationshipDataTypeSync: this.#relationshipDataTypeSync,
-            relationshipOptimization: this.#relationshipOptimization,
-            columnOrder: this.#columnOrder,
-            maxWidthComment: this.#maxWidthComment,
-            ignoreSaveSettings: this.#ignoreSaveSettings,
-        }
-    }
+function clamp(value: number, minimum: number, maximum: number) {
+    return Math.min(Math.max(value, minimum), maximum)
 }

@@ -1,104 +1,246 @@
 import type { DMMF } from '@prisma/generator-helper'
 
-import { Column } from './Field.ts'
-import { Memo } from './Memo.ts'
-import { Model } from './Model.ts'
-import { Relation } from './Relation.ts'
-import { Settings } from './Settings.ts'
+import { DatabaseIndex } from './DatabaseIndex.js'
+import { Memo } from './Memo.js'
+import { Model } from './Model.js'
+import { Relation } from './Relation.js'
+import { Settings } from './Settings.js'
+import type {
+    ErdEditorSchema,
+    IndexEntity,
+    MemoEntity,
+    RelationshipEntity,
+    TableColumnEntity,
+    TableEntity,
+} from './types.js'
+
+type ERDOptions = {
+    enums: readonly DMMF.DatamodelEnum[]
+    models: readonly DMMF.Model[]
+    indexes: readonly DMMF.Index[]
+    provider: string
+    previous: ErdEditorSchema | undefined
+}
 
 export class ERD {
-    #$schema =
-        'https://raw.githubusercontent.com/dineug/erd-editor/main/json-schema/schema.json'
-    #version = '3.0.0'
-    #settings = new Settings()
-    #zIndex = 2
-    #memoEntities = new Map<string, Memo>()
-    #memoIds = new Set<string>()
-    #modelEntities = new Map<string, Model>()
-    #modelIds = new Set<string>()
-    #columnEntities = new Map<string, Column>()
-    #relationEntities = new Map<string, Relation>()
-    #relationIds = new Set<string>()
+    readonly settings: Settings
+    readonly models = new Map<string, Model>()
+    #memos: Memo[]
+    #relations: Relation[] = []
+    #indexes: DatabaseIndex[] = []
 
-    get settings() {
-        return this.#settings
+    constructor(options: ERDOptions) {
+        const previous = createPreviousLookups(options.previous)
+        const dimensions = calculateDimensions(
+            options.models.length,
+            options.enums.length,
+        )
+        this.settings = new Settings(
+            options.provider,
+            options.previous?.settings,
+            dimensions,
+        )
+
+        options.models.forEach((data, index) => {
+            const name = data.dbName ?? data.name
+            const previousTable = previous.tables.get(name)
+            const previousColumns =
+                previousTable ?
+                    previous.columns.get(previousTable.id)
+                :   undefined
+            const model = new Model(data, index, previousTable, previousColumns)
+            this.models.set(data.name, model)
+        })
+
+        this.#memos = options.enums.map((data, index) => {
+            const name = data.dbName ?? data.name
+            return new Memo(data, index, previous.memos.get(name))
+        })
+
+        this.#createRelations(previous.relations)
+        this.#createIndexes(options.indexes, previous.indexes)
     }
 
-    get models(): ReadonlyMap<string, Model> {
-        return this.#modelEntities
-    }
-
-    constructor(
-        enums: Readonly<DMMF.DatamodelEnum[]>,
-        models: Readonly<DMMF.Model[]>,
+    #createRelations(
+        previousRelations: ReadonlyMap<string, RelationshipEntity>,
     ) {
-        enums.forEach(e => new Memo(this, e))
-        models.forEach(m => new Model(this, m))
-    }
+        for (const fromModel of this.models.values()) {
+            for (const field of fromModel.data.fields) {
+                if (
+                    field.kind !== 'object' ||
+                    !field.relationFromFields?.length
+                ) {
+                    continue
+                }
 
-    getZIndex() {
-        return this.#zIndex++
-    }
+                const toModel = this.models.get(field.type)
+                if (!toModel) continue
 
-    addMemo(memo: Memo) {
-        this.#memoEntities.set(memo.id, memo)
-        this.#memoIds.add(memo.id)
-    }
-
-    addModel(model: Model) {
-        this.#modelEntities.set(model.id, model)
-        this.#modelIds.add(model.id)
-    }
-
-    addColumn(column: Column) {
-        this.#columnEntities.set(column.id, column)
-    }
-
-    findRelation(name: string) {
-        for (const relation of this.#relationEntities.values()) {
-            if (relation.relationName === name) return relation
+                const toField = toModel.data.fields.find(
+                    candidate =>
+                        candidate.kind === 'object' &&
+                        candidate.relationName === field.relationName &&
+                        candidate.type === fromModel.prismaName &&
+                        candidate.name !== field.name,
+                )
+                const signature = Relation.createSignature(
+                    toModel.name,
+                    (field.relationToFields ?? []).map(
+                        name => toModel.findColumn(name)?.name ?? name,
+                    ),
+                    fromModel.name,
+                    field.relationFromFields.map(
+                        name => fromModel.findColumn(name)?.name ?? name,
+                    ),
+                )
+                this.#relations.push(
+                    new Relation(
+                        fromModel,
+                        toModel,
+                        field,
+                        toField,
+                        previousRelations.get(signature),
+                    ),
+                )
+            }
         }
     }
 
-    findColumn(name: string) {
-        for (const column of this.#columnEntities.values()) {
-            if (column.name === name) return column
+    #createIndexes(
+        indexes: readonly DMMF.Index[],
+        previousIndexes: ReadonlyMap<string, IndexEntity>,
+    ) {
+        for (const data of indexes) {
+            if (data.type === 'id') continue
+            if (data.type === 'unique' && data.fields.length === 1) continue
+
+            const model = this.models.get(data.model)
+            if (!model) continue
+            const name =
+                data.dbName ??
+                data.name ??
+                `${model.name}_${data.fields.map(field => field.name).join('_')}_idx`
+            this.#indexes.push(
+                new DatabaseIndex(
+                    model,
+                    data,
+                    previousIndexes.get(`${model.name}:${name}`),
+                ),
+            )
         }
     }
 
-    addRelation(relation: Relation) {
-        this.#relationEntities.set(relation.id, relation)
-        this.#relationIds.add(relation.id)
-    }
+    build(): ErdEditorSchema {
+        const tables = Array.from(this.models.values())
+        const columns = tables.flatMap(model =>
+            Array.from(model.columns.values()),
+        )
+        const indexColumns = this.#indexes.flatMap(index => index.columns)
 
-    build() {
-        for (const model of this.#modelEntities.values()) {
-            model.analyze()
-        }
-        return this.toJSON()
-    }
-
-    toJSON() {
         return {
-            $schema: this.#$schema,
-            version: this.#version,
-            settings: this.#settings,
+            $schema:
+                'https://raw.githubusercontent.com/dineug/erd-editor/main/json-schema/schema.json',
+            version: '3.0.0',
+            settings: this.settings.toJSON(),
             doc: {
-                tableIds: Array.from(this.#modelIds),
-                relationshipIds: Array.from(this.#relationIds),
-                indexIds: [],
-                memoIds: Array.from(this.#memoIds),
+                tableIds: tables.map(table => table.id),
+                relationshipIds: this.#relations.map(relation => relation.id),
+                indexIds: this.#indexes.map(index => index.id),
+                memoIds: this.#memos.map(memo => memo.id),
             },
             collections: {
-                tableEntities: Object.fromEntries(this.#modelEntities),
-                tableColumnEntities: Object.fromEntries(this.#columnEntities),
-                relationshipEntities: Object.fromEntries(
-                    this.#relationEntities,
+                tableEntities: Object.fromEntries(
+                    tables.map(table => [table.id, table.toJSON()]),
                 ),
-                indexEntities: {},
-                indexColumnEntities: {},
-                memoEntities: Object.fromEntries(this.#memoEntities),
+                tableColumnEntities: Object.fromEntries(
+                    columns.map(column => [column.id, column.toJSON()]),
+                ),
+                relationshipEntities: Object.fromEntries(
+                    this.#relations.map(relation => [
+                        relation.id,
+                        relation.toJSON(),
+                    ]),
+                ),
+                indexEntities: Object.fromEntries(
+                    this.#indexes.map(index => [index.id, index.toJSON()]),
+                ),
+                indexColumnEntities: Object.fromEntries(
+                    indexColumns.map(column => [column.id, column.toJSON()]),
+                ),
+                memoEntities: Object.fromEntries(
+                    this.#memos.map(memo => [memo.id, memo.toJSON()]),
+                ),
             },
         }
+    }
+}
+
+function createPreviousLookups(previous?: ErdEditorSchema) {
+    const tables = new Map<string, TableEntity>()
+    const columns = new Map<string, Map<string, TableColumnEntity>>()
+    const memos = new Map<string, MemoEntity>()
+    const relations = new Map<string, RelationshipEntity>()
+    const indexes = new Map<string, IndexEntity>()
+
+    if (!previous) return { tables, columns, memos, relations, indexes }
+
+    for (const table of Object.values(previous.collections.tableEntities)) {
+        tables.set(table.name, table)
+        const tableColumns = new Map<string, TableColumnEntity>()
+        for (const id of table.columnIds) {
+            const column = previous.collections.tableColumnEntities[id]
+            if (column) tableColumns.set(column.name, column)
+        }
+        columns.set(table.id, tableColumns)
+    }
+
+    for (const memo of Object.values(previous.collections.memoEntities)) {
+        const [name] = memo.value.split(/\r?\n/)
+        if (name) memos.set(name, memo)
+    }
+
+    for (const relation of Object.values(
+        previous.collections.relationshipEntities,
+    )) {
+        const signature = getPreviousRelationSignature(previous, relation)
+        if (signature) relations.set(signature, relation)
+    }
+
+    for (const index of Object.values(previous.collections.indexEntities)) {
+        const table = previous.collections.tableEntities[index.tableId]
+        if (table) indexes.set(`${table.name}:${index.name}`, index)
+    }
+
+    return { tables, columns, memos, relations, indexes }
+}
+
+function getPreviousRelationSignature(
+    schema: ErdEditorSchema,
+    relation: RelationshipEntity,
+) {
+    const startTable = schema.collections.tableEntities[relation.start.tableId]
+    const endTable = schema.collections.tableEntities[relation.end.tableId]
+    if (!startTable || !endTable) return
+
+    const startColumns = relation.start.columnIds.map(
+        id => schema.collections.tableColumnEntities[id]?.name ?? id,
+    )
+    const endColumns = relation.end.columnIds.map(
+        id => schema.collections.tableColumnEntities[id]?.name ?? id,
+    )
+    return Relation.createSignature(
+        startTable.name,
+        startColumns,
+        endTable.name,
+        endColumns,
+    )
+}
+
+function calculateDimensions(modelCount: number, enumCount: number) {
+    const modelRows = Math.ceil(modelCount / 4)
+    const enumRows = Math.ceil(enumCount / 6)
+    return {
+        width: 2000,
+        height: Math.max(2000, modelRows * 360 + enumRows * 220 + 400),
     }
 }

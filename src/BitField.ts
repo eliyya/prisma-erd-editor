@@ -1,27 +1,58 @@
-import { FlaggedBitfield } from '@eliyya/flagged-bitfield'
+type FlagMap = Readonly<Record<string, number>>
+
+class BitField<T extends FlagMap> {
+    #value = 0
+
+    constructor(
+        private readonly flags: T,
+        initial = 0,
+    ) {
+        this.#value = initial
+    }
+
+    add(flag: keyof T) {
+        this.#value |= this.flags[flag] ?? 0
+        return this
+    }
+
+    remove(flag: keyof T) {
+        this.#value &= ~(this.flags[flag] ?? 0)
+        return this
+    }
+
+    has(flag: keyof T) {
+        return (this.#value & (this.flags[flag] ?? 0)) !== 0
+    }
+
+    toNumber() {
+        return this.#value
+    }
+}
 
 export const TableColumnEntityKeysFlags = {
-    primaryKey: 1n << 0n,
-    foreignKey: 1n << 1n,
+    primaryKey: 1,
+    foreignKey: 2,
 } as const
 
-export class TableColumnEntityKeysBitField extends FlaggedBitfield<
+export class TableColumnEntityKeysBitField extends BitField<
     typeof TableColumnEntityKeysFlags
 > {
-    static override Flags = TableColumnEntityKeysFlags
-    static override DefaultBit = 0n
+    constructor(initial = 0) {
+        super(TableColumnEntityKeysFlags, initial)
+    }
 }
 
 export const TableColumnEntityOptionsFlags = {
-    autoIncrement: 1n << 0n,
-    primaryKey: 1n << 1n,
-    unique: 1n << 2n,
-    notNull: 1n << 3n,
+    autoIncrement: 1,
+    primaryKey: 2,
+    unique: 4,
+    notNull: 8,
 } as const
 
-export class TableColumnEntityOptionsBitField extends FlaggedBitfield<
+export class TableColumnEntityOptionsBitField extends BitField<
     typeof TableColumnEntityOptionsFlags
 > {
-    static override Flags = TableColumnEntityOptionsFlags
-    static override DefaultBit = 0n
+    constructor(initial = 0) {
+        super(TableColumnEntityOptionsFlags, initial)
+    }
 }

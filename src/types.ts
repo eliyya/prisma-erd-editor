@@ -20,8 +20,8 @@ export interface Settings {
     scrollLeft: number
     zoomLevel: number
     show: number
-    database?: number
-    databaseName?: string
+    database: number
+    databaseName: string
     canvasType:
         | 'ERD'
         | '@dineug/erd-editor/builtin-visualization'
@@ -36,14 +36,14 @@ export interface Settings {
     relationshipOptimization: boolean
     columnOrder: number[]
     maxWidthComment: number
-    ignoreSaveSettings?: number
+    ignoreSaveSettings: number
 }
 
 export interface Doc {
-    tableIds?: string[]
-    relationshipIds?: string[]
-    indexIds?: string[]
-    memoIds?: string[]
+    tableIds: string[]
+    relationshipIds: string[]
+    indexIds: string[]
+    memoIds: string[]
 }
 
 export interface TableEntity {

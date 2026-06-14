@@ -3,120 +3,126 @@ import type { DMMF } from '@prisma/generator-helper'
 import {
     TableColumnEntityKeysBitField,
     TableColumnEntityOptionsBitField,
-} from './BitField.ts'
-import {
-    PRISMA_TYPES_TO_POSTGRESQL_TYPES,
-    type PrismaTypes,
-} from './constants.ts'
-import { genId } from './id.ts'
-import { Meta } from './Meta.ts'
-import { Model } from './Model.ts'
+} from './BitField.js'
+import { getDataType } from './constants.js'
+import { genId } from './id.js'
+import { Meta } from './Meta.js'
+import type { Model } from './Model.js'
+import type { TableColumnEntity } from './types.js'
 
 export class Column {
-    #id = genId()
-    #name = ''
-    #comment = ''
-    #dataType = ''
-    #default = ''
-    #options = new TableColumnEntityOptionsBitField()
-    #ui = {
-        keys: new TableColumnEntityKeysBitField(),
-        widthName: 60,
-        widthComment: 60,
-        widthDataType: 60,
-        widthDefault: 60,
-    }
-    #meta = new Meta()
-    #model: Model
-    #data: Readonly<DMMF.Field>
+    readonly id: string
+    readonly name: string
+    readonly prismaName: string
+    readonly data: Readonly<DMMF.Field>
+    readonly model: Model
+    #foreignKey = false
+    #previous: TableColumnEntity | undefined
 
-    get id() {
-        return this.#id
-    }
-
-    get name() {
-        return this.#name
-    }
-
-    constructor(model: Model, data: Readonly<DMMF.Field>) {
-        this.#model = model
-        this.#data = data
-        this.#name = this.#data.dbName ?? data.name
-        this.#comment = this.#data.documentation ?? ''
-        this.#dataType =
-            PRISMA_TYPES_TO_POSTGRESQL_TYPES[data.type as PrismaTypes] ??
-            data.type
-
-        if (data.isRequired) this.#options.add('notNull')
-        if (data.isUnique) this.#options.add('unique')
-        if (
-            this.#isField(data.default) &&
-            data.default.name === 'autoIncrement'
-        ) {
-            this.#options.add('autoIncrement')
-        }
-        if (data.isId) {
-            this.#options.add('primaryKey')
-            this.#options.add('unique')
-            this.#ui.keys.add('primaryKey')
-        }
-        this.#default = this.#getDefault(data.default)
-    }
-
-    #isField(field: unknown): field is FieldOption {
-        if (!field) return false
-        if (typeof field !== 'object') return false
-        if (!('name' in field)) return false
-        if (!('args' in field)) return false
-        return true
+    constructor(
+        model: Model,
+        data: Readonly<DMMF.Field>,
+        previous?: TableColumnEntity,
+    ) {
+        this.model = model
+        this.data = data
+        this.prismaName = data.name
+        this.name = data.dbName ?? data.name
+        this.#previous = previous
+        this.id = previous?.id ?? genId(`column:${model.name}.${this.name}`)
     }
 
     setForeignKey() {
-        this.#ui.keys.add('foreignKey')
+        this.#foreignKey = true
     }
 
-    removeForeignKey() {
-        this.#ui.keys.remove('foreignKey')
-    }
+    toJSON(): TableColumnEntity {
+        const options = new TableColumnEntityOptionsBitField()
+        const keys = new TableColumnEntityKeysBitField()
+        const primaryFields = this.model.primaryFields
+        const isPrimary = primaryFields.includes(this.prismaName)
+        const isSinglePrimary = isPrimary && primaryFields.length === 1
 
-    #getDefault(def: DMMF.Field['default']) {
-        if (!def) return ''
-
-        if (typeof def === 'string') return def
-        if (typeof def === 'number') return `${def}`
-        if (typeof def === 'boolean') return `${def}`
-        if (Array.isArray(def)) return def.join(', ')
-        if (this.#isField(def)) {
-            if (def.name !== 'dbgenerated')
-                return `${def.name}(${def.args.join(', ')})`
-            if (def.args.length > 1)
-                return `${def.name}(${def.args.join(', ')})`
-            if (def.args.length === 1) return `${def.args[0]}`
-            return `${def.name}(${def.args.join(', ')})`
+        if (this.data.isRequired) options.add('notNull')
+        if (this.data.isUnique || isSinglePrimary) options.add('unique')
+        if (isPrimary) {
+            options.add('primaryKey')
+            keys.add('primaryKey')
+        }
+        if (this.#foreignKey) keys.add('foreignKey')
+        if (
+            isFieldDefault(this.data.default) &&
+            this.data.default.name.toLowerCase() === 'autoincrement'
+        ) {
+            options.add('autoIncrement')
         }
 
-        return ''
-    }
-
-    toJSON() {
+        const defaultValue = formatDefault(this.data)
         return {
-            id: this.#id,
-            tableId: this.#model.id,
-            name: this.#name,
-            comment: this.#comment,
-            dataType: this.#dataType,
-            default: this.#default,
-            options: this.#options.toNumber(),
+            id: this.id,
+            tableId: this.model.id,
+            name: this.name,
+            comment: this.data.documentation ?? '',
+            dataType: getDataType(this.data),
+            default: defaultValue,
+            options: options.toNumber(),
             ui: {
-                ...this.#ui,
-                keys: this.#ui.keys.toNumber(),
+                keys: keys.toNumber(),
+                widthName:
+                    this.#previous?.ui.widthName ?? widthFor(this.name, 60),
+                widthComment: this.#previous?.ui.widthComment ?? 60,
+                widthDataType:
+                    this.#previous?.ui.widthDataType ??
+                    widthFor(getDataType(this.data), 60),
+                widthDefault:
+                    this.#previous?.ui.widthDefault ??
+                    widthFor(defaultValue, 60),
             },
-            meta: this.#meta,
+            meta: new Meta(this.#previous?.meta),
         }
     }
 }
 
-type FieldOption = {
-    name: string
-    args: Array<string | number>
+function formatDefault(field: Readonly<DMMF.Field>): string {
+    const value = field.default
+    if (value === undefined || value === null) return ''
+    if (isDefaultArray(value)) {
+        return `[${value.map(item => formatScalar(item, field)).join(', ')}]`
+    }
+    if (isFieldDefault(value)) {
+        if (value.name === 'dbgenerated' && value.args.length === 1) {
+            return String(value.args[0])
+        }
+        return `${value.name}(${value.args.join(', ')})`
+    }
+    return formatScalar(value, field)
+}
+
+function isDefaultArray(
+    value: DMMF.Field['default'],
+): value is readonly DMMF.FieldDefaultScalar[] {
+    return Array.isArray(value)
+}
+
+function formatScalar(
+    value: string | number | boolean,
+    field: Readonly<DMMF.Field>,
+) {
+    if (typeof value !== 'string') return String(value)
+    if (field.kind === 'enum') return value
+    if (field.type !== 'String') return value
+    return `'${value.replaceAll("'", "''")}'`
+}
+
+function isFieldDefault(value: unknown): value is DMMF.FieldDefault {
+    return (
+        typeof value === 'object' &&
+        value !== null &&
+        'name' in value &&
+        'args' in value
+    )
+}
+
+function widthFor(value: string, minimum: number) {
+    return Math.max(minimum, Math.ceil(value.length * 5.5))
 }

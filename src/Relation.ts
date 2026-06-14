@@ -1,118 +1,152 @@
 import type { DMMF } from '@prisma/generator-helper'
 
-import { genId } from './id.ts'
-import { Meta } from './Meta.ts'
-import { Model } from './Model.ts'
+import {
+    Direction,
+    RelationshipType,
+    StartRelationshipType,
+} from './constants.js'
+import { genId } from './id.js'
+import { Meta } from './Meta.js'
+import type { Model } from './Model.js'
+import type { RelationshipEntity } from './types.js'
 
 export class Relation {
-    #id = genId()
-    #identification = false
-    #relationshipType = 16
-    #startRelationshipType = 2
-    #start = {
-        tableId: '',
-        columnIds: new Set<string>(),
-        x: 0,
-        y: 0,
-        direction: 1,
-    }
-    #end = {
-        tableId: '',
-        columnIds: new Set<string>(),
-        x: 0,
-        y: 0,
-        direction: 1,
-    }
-    #meta = new Meta()
-    #from?: Readonly<DMMF.Field>
-    #fromModel?: Model
-    #to?: Readonly<DMMF.Field>
-    #toModel?: Model
-    #relationName = ''
+    readonly id: string
+    readonly signature: string
+    #fromModel: Model
+    #toModel: Model
+    #fromField: Readonly<DMMF.Field>
+    #toField: Readonly<DMMF.Field> | undefined
+    #fromColumnIds: string[]
+    #toColumnIds: string[]
+    #previous: RelationshipEntity | undefined
 
-    get id() {
-        return this.#id
-    }
+    constructor(
+        fromModel: Model,
+        toModel: Model,
+        fromField: Readonly<DMMF.Field>,
+        toField?: Readonly<DMMF.Field>,
+        previous?: RelationshipEntity,
+    ) {
+        this.#fromModel = fromModel
+        this.#toModel = toModel
+        this.#fromField = fromField
+        this.#toField = toField
+        this.#previous = previous
 
-    get relationName() {
-        return this.#relationName
-    }
-
-    constructor(model: Model, data: Readonly<DMMF.Field>) {
-        this.#relationName = data.relationName!
-
-        const rel = model.erd.findRelation(data.relationName!)
-
-        if (rel) {
-            if (data.relationFromFields?.length) {
-                rel.setFrom(data, model)
-            } else {
-                rel.setTo(data, model)
+        this.#fromColumnIds = (fromField.relationFromFields ?? []).map(name => {
+            const column = fromModel.findColumn(name)
+            if (!column) {
+                throw new Error(
+                    `Relation ${fromField.relationName} references missing field ${fromModel.prismaName}.${name}`,
+                )
             }
-        } else {
-            if (data.relationFromFields?.length) {
-                this.#from = data
-                this.#fromModel = model
-            } else {
-                this.#to = data
-                this.#toModel = model
+            column.setForeignKey()
+            return column.id
+        })
+        this.#toColumnIds = (fromField.relationToFields ?? []).map(name => {
+            const column = toModel.findColumn(name)
+            if (!column) {
+                throw new Error(
+                    `Relation ${fromField.relationName} references missing field ${toModel.prismaName}.${name}`,
+                )
             }
-            model.erd.addRelation(this)
-        }
+            return column.id
+        })
+
+        this.signature = Relation.createSignature(
+            toModel.name,
+            this.#toColumnIds.map(id => findColumnName(toModel, id)),
+            fromModel.name,
+            this.#fromColumnIds.map(id => findColumnName(fromModel, id)),
+        )
+        this.id =
+            previous?.id ??
+            genId(
+                `relation:${fromModel.name}:${fromField.relationName}:${this.#fromColumnIds.join(',')}`,
+            )
     }
 
-    setFrom(from: Readonly<DMMF.Field>, model: Model) {
-        this.#from = from
-        this.#fromModel = model
-        if (this.#to) this.#analyze()
+    static createSignature(
+        startTable: string,
+        startColumns: readonly string[],
+        endTable: string,
+        endColumns: readonly string[],
+    ) {
+        return `${startTable}(${startColumns.join(',')})->${endTable}(${endColumns.join(',')})`
     }
 
-    setTo(to: Readonly<DMMF.Field>, model: Model) {
-        this.#to = to
-        this.#toModel = model
-        if (this.#from) this.#analyze()
-    }
+    toJSON(): RelationshipEntity {
+        const isIdentifying =
+            this.#fromColumnIds.length > 0 &&
+            (this.#fromField.relationFromFields ?? []).every(field =>
+                this.#fromModel.primaryFields.includes(field),
+            )
+        const required = (this.#fromField.relationFromFields ?? []).every(
+            field => this.#fromModel.findColumn(field)?.data.isRequired,
+        )
+        const toMany = this.#toField?.isList ?? false
 
-    #analyze() {
-        if (!this.#from || !this.#to || !this.#fromModel || !this.#toModel)
-            return
-        this.#start.tableId = this.#fromModel.id
-        this.#end.tableId = this.#toModel.id
+        const startPosition = relationshipPoint(
+            this.#toModel,
+            this.#fromModel,
+            true,
+        )
+        const endPosition = relationshipPoint(
+            this.#fromModel,
+            this.#toModel,
+            false,
+        )
 
-        const [fromFieldName] = this.#from.relationFromFields!
-        const fromColumn = this.#fromModel.erd.findColumn(fromFieldName!)!
-        fromColumn.setForeignKey()
-
-        this.#start.columnIds.add(fromColumn.id)
-
-        const [toFieldName] = this.#from.relationToFields!
-        const toColumn = this.#toModel.erd.findColumn(toFieldName!)!
-        this.#end.columnIds.add(toColumn.id)
-
-        // relationshipType
-    }
-
-    toJSON() {
         return {
-            id: this.#id,
-            identification: this.#identification,
-            relationshipType: this.#relationshipType,
-            startRelationshipType: this.#startRelationshipType,
+            id: this.id,
+            identification: isIdentifying,
+            relationshipType:
+                toMany ? RelationshipType.oneN : RelationshipType.oneOnly,
+            startRelationshipType:
+                required ?
+                    StartRelationshipType.dash
+                :   StartRelationshipType.ring,
             start: {
-                tableId: this.#start.tableId,
-                columnIds: Array.from(this.#start.columnIds),
-                x: this.#start.x,
-                y: this.#start.y,
-                direction: this.#start.direction,
+                tableId: this.#toModel.id,
+                columnIds: this.#toColumnIds,
+                x: this.#previous?.start.x ?? startPosition.x,
+                y: this.#previous?.start.y ?? startPosition.y,
+                direction:
+                    this.#previous?.start.direction ?? startPosition.direction,
             },
             end: {
-                tableId: this.#end.tableId,
-                columnIds: Array.from(this.#end.columnIds),
-                x: this.#end.x,
-                y: this.#end.y,
-                direction: this.#end.direction,
+                tableId: this.#fromModel.id,
+                columnIds: this.#fromColumnIds,
+                x: this.#previous?.end.x ?? endPosition.x,
+                y: this.#previous?.end.y ?? endPosition.y,
+                direction:
+                    this.#previous?.end.direction ?? endPosition.direction,
             },
-            meta: this.#meta,
+            meta: new Meta(this.#previous?.meta),
         }
+    }
+}
+
+function findColumnName(model: Model, id: string) {
+    for (const column of model.columns.values()) {
+        if (column.id === id) return column.name
+    }
+    return id
+}
+
+function relationshipPoint(model: Model, other: Model, start: boolean) {
+    const isLeft = model.position.x < other.position.x
+    const x = model.position.x + (isLeft ? 360 : 0)
+    const y = model.position.y + 70
+    return {
+        x,
+        y,
+        direction:
+            isLeft ?
+                start ? Direction.right
+                :   Direction.left
+            : start ? Direction.left
+            : Direction.right,
     }
 }
