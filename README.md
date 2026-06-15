@@ -1,12 +1,12 @@
 # prisma-erd-editor
 
 Prisma generator that creates `.erd` files compatible with
-[ERD Editor](https://erd-editor.io/).
+[ERD Editor for Visual Studio Code](https://marketplace.visualstudio.com/items?itemName=dineug.vuerd-vscode).
 
 ## Installation
 
 ```bash
-npm install --save-dev prisma-erd-editor
+pnpm add --save-dev prisma-erd-editor
 ```
 
 Add the generator to `schema.prisma`:
@@ -24,8 +24,8 @@ Then run:
 npx prisma generate
 ```
 
-Open the generated `schema.erd` at
-[erd-editor.io](https://erd-editor.io/).
+Open the generated `schema.erd` with the
+[ERD Editor extension](https://marketplace.visualstudio.com/items?itemName=dineug.vuerd-vscode).
 
 ## Generated data
 
@@ -52,10 +52,19 @@ when the join table must appear in the diagram.
 ## Development
 
 ```bash
-npm install
-npm run lint
-npm test
+pnpm install
+pnpm run lint
+pnpm test
 ```
 
-`npm test` builds the package and runs a real `prisma generate` integration
+`pnpm test` builds the package and runs a real `prisma generate` integration
 test.
+
+## Releases
+
+Pushes to `main` check whether the exact `name@version` from `package.json`
+already exists on npm. The workflow installs, verifies, and publishes only
+when that version is new.
+
+Publishing uses npm Trusted Publishing through GitHub Actions OIDC, so the
+release workflow does not require an `NPM_TOKEN` secret.

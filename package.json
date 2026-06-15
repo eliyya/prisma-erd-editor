@@ -3,6 +3,7 @@
     "version": "0.1.0",
     "description": "Prisma generator for ERD Editor compatible .erd diagrams",
     "type": "module",
+    "packageManager": "pnpm@11.5.2",
     "main": "./dist/api.js",
     "types": "./dist/api.d.ts",
     "exports": {
@@ -21,14 +22,23 @@
     ],
     "scripts": {
         "build": "tsc",
-        "test": "npm run build && node --test",
+        "test": "pnpm run build && node --test",
         "lint": "eslint .",
         "lint:fix": "eslint . --fix",
         "format": "prettier --write \"**/*.{ts,js,json,md}\" --ignore-path .gitignore",
-        "prepublishOnly": "npm run lint && npm test"
+        "verify": "pnpm run lint && pnpm run test",
+        "prepublishOnly": "pnpm run verify"
     },
     "author": "",
     "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/eliyya/prisma-erd-editor.git"
+    },
+    "bugs": {
+        "url": "https://github.com/eliyya/prisma-erd-editor/issues"
+    },
+    "homepage": "https://github.com/eliyya/prisma-erd-editor#readme",
     "devDependencies": {
         "@eslint/js": "9.35.0",
         "@types/node": "24.3.3",
@@ -40,8 +50,8 @@
         "eslint-plugin-security": "3.0.1",
         "prettier": "3.6.2",
         "prisma": "6.16.1",
-        "typescript": "5.9.2",
-        "typescript-eslint": "8.43.0"
+        "typescript": "6.0.3",
+        "typescript-eslint": "8.61.0"
     },
     "dependencies": {
         "@prisma/generator-helper": "6.16.1"
