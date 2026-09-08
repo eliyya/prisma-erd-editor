@@ -47,7 +47,6 @@ jobs:
               if: steps.version.outputs.publish == 'true'
               uses: pnpm/action-setup@v4
               with:
-                  version: 11.5.2
                   run_install: false
 
             - name: Install dependencies
