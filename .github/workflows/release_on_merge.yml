@@ -1,0 +1,59 @@
+name: Release on Merge to Main
+
+on:
+    push:
+        branches:
+            - main
+
+permissions:
+    contents: read
+    id-token: write
+
+concurrency:
+    group: npm-release-main
+    cancel-in-progress: false
+
+jobs:
+    release:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout main branch
+              uses: actions/checkout@v6
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v6
+              with:
+                  node-version: '24'
+                  registry-url: 'https://registry.npmjs.org'
+                  package-manager-cache: false
+
+            - name: Check whether this version is already published
+              id: version
+              shell: bash
+              run: |
+                  package_name=$(node -p "require('./package.json').name")
+                  package_version=$(node -p "require('./package.json').version")
+
+                  if npm view "${package_name}@${package_version}" version >/dev/null 2>&1; then
+                      echo "publish=false" >> "$GITHUB_OUTPUT"
+                      echo "${package_name}@${package_version} is already published; skipping release."
+                  else
+                      echo "publish=true" >> "$GITHUB_OUTPUT"
+                      echo "${package_name}@${package_version} is not published yet."
+                  fi
+
+            - name: Setup pnpm
+              if: steps.version.outputs.publish == 'true'
+              uses: pnpm/action-setup@v4
+              with:
+                  version: 11.5.2
+                  run_install: false
+
+            - name: Install dependencies
+              if: steps.version.outputs.publish == 'true'
+              run: pnpm install --frozen-lockfile
+
+            - name: Publish to npm with Trusted Publishing
+              if: steps.version.outputs.publish == 'true'
+              run: npm publish --access public --provenance

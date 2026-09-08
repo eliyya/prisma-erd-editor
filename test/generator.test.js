@@ -69,6 +69,12 @@ test('generates a complete ERD Editor schema and preserves layout', async () => 
     )
 
     users.ui.x = 777
+    for (const collection of Object.values(first.collections)) {
+        for (const entity of Object.values(collection)) {
+            entity.meta.updateAt = 123
+            entity.meta.createAt = 100
+        }
+    }
     await writeFile(outputPath, `${JSON.stringify(first, null, 2)}\n`, 'utf8')
     await generate(schemaPath)
 
@@ -76,6 +82,7 @@ test('generates a complete ERD Editor schema and preserves layout', async () => 
     const regeneratedUsers = table(second, 'users')
     assert.equal(regeneratedUsers.id, users.id)
     assert.equal(regeneratedUsers.ui.x, 777)
+    assert.deepEqual(second, first)
     assertReferences(second)
 })
 
