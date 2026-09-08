@@ -30,6 +30,8 @@ pgh.generatorHandler({
             previous,
         }).build()
 
+        if (previous && schemasAreEquivalent(previous, schema)) return
+
         await mkdir(dirname(output), { recursive: true })
         await writeFile(output, `${JSON.stringify(schema, null, 2)}\n`, 'utf8')
     },
@@ -61,4 +63,17 @@ async function readExistingSchema(
         throw error
     }
     return
+}
+
+function schemasAreEquivalent(
+    previous: ErdEditorSchema,
+    generated: ErdEditorSchema,
+) {
+    return stableSchemaValue(previous) === stableSchemaValue(generated)
+}
+
+function stableSchemaValue(schema: ErdEditorSchema) {
+    return JSON.stringify(schema, (key, value: unknown) =>
+        key === 'updateAt' || key === 'createAt' ? undefined : value,
+    )
 }

@@ -1,9 +1,9 @@
 {
     "name": "prisma-erd-editor",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "description": "Prisma generator for ERD Editor compatible .erd diagrams",
     "type": "module",
-    "packageManager": "pnpm@11.5.2",
+    "packageManager": "pnpm@12.3.4",
     "main": "./dist/api.js",
     "types": "./dist/api.d.ts",
     "exports": {
