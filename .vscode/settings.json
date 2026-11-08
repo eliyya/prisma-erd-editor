@@ -1,23 +1,26 @@
 {
-    "editor.defaultFormatter": "esbenp.prettier-vscode",
-    "eslint.useFlatConfig": true,
-    "eslint.validate": ["javascript", "typescript"],
-    "eslint.workingDirectories": [{ "mode": "auto" }],
+    "editor.defaultFormatter": "oxc.oxc-vscode",
+    "oxc.disableNestedConfig": true,
+    "oxc.fmt.disableNestedConfig": true,
     "editor.formatOnSave": true,
-    "editor.formatOnPaste": true,
+    "editor.formatOnSaveMode": "file",
+    "editor.formatOnPaste": false,
     "editor.codeActionsOnSave": {
-        "source.fixAll.eslint": "always"
+        "source.fixAll.oxc": "always"
     },
     "[prisma]": {
         "editor.defaultFormatter": "Prisma.prisma"
     },
     "[jsonc]": {
-        "editor.defaultFormatter": "esbenp.prettier-vscode"
+        "editor.defaultFormatter": "oxc.oxc-vscode"
     },
     "[json]": {
-        "editor.defaultFormatter": "esbenp.prettier-vscode"
+        "editor.defaultFormatter": "oxc.oxc-vscode"
     },
     "[typescript]": {
-        "editor.defaultFormatter": "esbenp.prettier-vscode"
+        "editor.defaultFormatter": "oxc.oxc-vscode"
+    },
+    "[javascript]": {
+        "editor.defaultFormatter": "oxc.oxc-vscode"
     }
 }

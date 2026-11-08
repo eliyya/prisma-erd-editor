@@ -28,26 +28,22 @@ export class ERD {
     #memos: Memo[]
     #relations: Relation[] = []
     #indexes: DatabaseIndex[] = []
+    #previous: ErdEditorSchema | undefined
 
     constructor(options: ERDOptions) {
         const previous = createPreviousLookups(options.previous)
-        const dimensions = calculateDimensions(
-            options.models.length,
-            options.enums.length,
-        )
+        this.#previous = options.previous
         this.settings = new Settings(
             options.provider,
             options.previous?.settings,
-            dimensions,
         )
 
         options.models.forEach((data, index) => {
             const name = data.dbName ?? data.name
             const previousTable = previous.tables.get(name)
-            const previousColumns =
-                previousTable ?
-                    previous.columns.get(previousTable.id)
-                :   undefined
+            const previousColumns = previousTable
+                ? previous.columns.get(previousTable.id)
+                : undefined
             const model = new Model(data, index, previousTable, previousColumns)
             this.models.set(data.name, model)
         })
@@ -131,11 +127,67 @@ export class ERD {
     }
 
     build(): ErdEditorSchema {
-        const tables = Array.from(this.models.values())
+        const tables = orderEntities(
+            Array.from(this.models.values()),
+            this.#previous?.doc.tableIds,
+        )
+        const relations = orderEntities(
+            this.#relations,
+            this.#previous?.doc.relationshipIds,
+        )
+        const indexes = orderEntities(
+            this.#indexes,
+            this.#previous?.doc.indexIds,
+        )
+        const memos = orderEntities(this.#memos, this.#previous?.doc.memoIds)
         const columns = tables.flatMap(model =>
             Array.from(model.columns.values()),
         )
-        const indexColumns = this.#indexes.flatMap(index => index.columns)
+        const indexColumns = indexes.flatMap(index => index.columns)
+        const previousCollections = this.#previous?.collections
+        const groups = Object.values(
+            previousCollections?.tableGroupEntities ?? {},
+        )
+        const groupIds = orderEntities(
+            groups,
+            this.#previous?.doc.tableGroupIds,
+        ).map(group => group.id)
+        const collections = {
+            ...(tables.length > 0 && {
+                tableEntities: entities(tables.map(table => table.toJSON())),
+            }),
+            ...(columns.length > 0 && {
+                tableColumnEntities: entities(
+                    columns.map(column => column.toJSON()),
+                ),
+            }),
+            ...(relations.length > 0 && {
+                relationshipEntities: entities(
+                    relations.map(relation => relation.toJSON()),
+                ),
+            }),
+            ...(indexes.length > 0 && {
+                indexEntities: entities(indexes.map(index => index.toJSON())),
+            }),
+            ...(indexColumns.length > 0 && {
+                indexColumnEntities: entities(
+                    indexColumns.map(column => column.toJSON()),
+                ),
+            }),
+            ...(memos.length > 0 && {
+                memoEntities: entities(memos.map(memo => memo.toJSON())),
+            }),
+            ...(groups.length > 0 && { tableGroupEntities: entities(groups) }),
+            ...(previousCollections?.wordEntities?.rows.length && {
+                wordEntities: previousCollections.wordEntities,
+            }),
+            ...(previousCollections?.termEntities?.rows.length && {
+                termEntities: previousCollections.termEntities,
+            }),
+            ...(previousCollections?.domainEntities?.rows.length && {
+                domainEntities: previousCollections.domainEntities,
+            }),
+        }
 
         return {
             $schema:
@@ -143,34 +195,21 @@ export class ERD {
             version: '3.0.0',
             settings: this.settings.toJSON(),
             doc: {
-                tableIds: tables.map(table => table.id),
-                relationshipIds: this.#relations.map(relation => relation.id),
-                indexIds: this.#indexes.map(index => index.id),
-                memoIds: this.#memos.map(memo => memo.id),
+                ...(tables.length > 0 && {
+                    tableIds: tables.map(table => table.id),
+                }),
+                ...(relations.length > 0 && {
+                    relationshipIds: relations.map(relation => relation.id),
+                }),
+                ...(indexes.length > 0 && {
+                    indexIds: indexes.map(index => index.id),
+                }),
+                ...(memos.length > 0 && {
+                    memoIds: memos.map(memo => memo.id),
+                }),
+                ...(groupIds.length > 0 && { tableGroupIds: groupIds }),
             },
-            collections: {
-                tableEntities: Object.fromEntries(
-                    tables.map(table => [table.id, table.toJSON()]),
-                ),
-                tableColumnEntities: Object.fromEntries(
-                    columns.map(column => [column.id, column.toJSON()]),
-                ),
-                relationshipEntities: Object.fromEntries(
-                    this.#relations.map(relation => [
-                        relation.id,
-                        relation.toJSON(),
-                    ]),
-                ),
-                indexEntities: Object.fromEntries(
-                    this.#indexes.map(index => [index.id, index.toJSON()]),
-                ),
-                indexColumnEntities: Object.fromEntries(
-                    indexColumns.map(column => [column.id, column.toJSON()]),
-                ),
-                memoEntities: Object.fromEntries(
-                    this.#memos.map(memo => [memo.id, memo.toJSON()]),
-                ),
-            },
+            ...(Object.keys(collections).length > 0 && { collections }),
         }
     }
 }
@@ -184,31 +223,37 @@ function createPreviousLookups(previous?: ErdEditorSchema) {
 
     if (!previous) return { tables, columns, memos, relations, indexes }
 
-    for (const table of Object.values(previous.collections.tableEntities)) {
-        tables.set(table.name, table)
+    for (const table of Object.values(
+        previous.collections?.tableEntities ?? {},
+    )) {
+        tables.set(table.name ?? '', table)
         const tableColumns = new Map<string, TableColumnEntity>()
         for (const id of table.columnIds) {
-            const column = previous.collections.tableColumnEntities[id]
-            if (column) tableColumns.set(column.name, column)
+            const column = previous.collections?.tableColumnEntities?.[id]
+            if (column) tableColumns.set(column.name ?? '', column)
         }
         columns.set(table.id, tableColumns)
     }
 
-    for (const memo of Object.values(previous.collections.memoEntities)) {
-        const [name] = memo.value.split(/\r?\n/)
+    for (const memo of Object.values(
+        previous.collections?.memoEntities ?? {},
+    )) {
+        const [name] = (memo.value ?? '').split(/\r?\n/)
         if (name) memos.set(name, memo)
     }
 
     for (const relation of Object.values(
-        previous.collections.relationshipEntities,
+        previous.collections?.relationshipEntities ?? {},
     )) {
         const signature = getPreviousRelationSignature(previous, relation)
         if (signature) relations.set(signature, relation)
     }
 
-    for (const index of Object.values(previous.collections.indexEntities)) {
-        const table = previous.collections.tableEntities[index.tableId]
-        if (table) indexes.set(`${table.name}:${index.name}`, index)
+    for (const index of Object.values(
+        previous.collections?.indexEntities ?? {},
+    )) {
+        const table = previous.collections?.tableEntities?.[index.tableId]
+        if (table) indexes.set(`${table.name ?? ''}:${index.name ?? ''}`, index)
     }
 
     return { tables, columns, memos, relations, indexes }
@@ -218,29 +263,41 @@ function getPreviousRelationSignature(
     schema: ErdEditorSchema,
     relation: RelationshipEntity,
 ) {
-    const startTable = schema.collections.tableEntities[relation.start.tableId]
-    const endTable = schema.collections.tableEntities[relation.end.tableId]
+    const startTable =
+        schema.collections?.tableEntities?.[relation.start.tableId]
+    const endTable = schema.collections?.tableEntities?.[relation.end.tableId]
     if (!startTable || !endTable) return
 
     const startColumns = relation.start.columnIds.map(
-        id => schema.collections.tableColumnEntities[id]?.name ?? id,
+        id => schema.collections?.tableColumnEntities?.[id]?.name ?? id,
     )
     const endColumns = relation.end.columnIds.map(
-        id => schema.collections.tableColumnEntities[id]?.name ?? id,
+        id => schema.collections?.tableColumnEntities?.[id]?.name ?? id,
     )
     return Relation.createSignature(
-        startTable.name,
+        startTable.name ?? '',
         startColumns,
-        endTable.name,
+        endTable.name ?? '',
         endColumns,
     )
 }
 
-function calculateDimensions(modelCount: number, enumCount: number) {
-    const modelRows = Math.ceil(modelCount / 4)
-    const enumRows = Math.ceil(enumCount / 6)
-    return {
-        width: 2000,
-        height: Math.max(2000, modelRows * 360 + enumRows * 220 + 400),
+function entities<T extends { id: string }>(items: T[]): Record<string, T> {
+    return Object.fromEntries(items.map(item => [item.id, item]))
+}
+
+function orderEntities<T extends { id: string }>(
+    items: T[],
+    previousIds: string[] = [],
+): T[] {
+    const remaining = new Map(items.map(item => [item.id, item]))
+    const ordered: T[] = []
+    for (const id of previousIds) {
+        const item = remaining.get(id)
+        if (item) {
+            ordered.push(item)
+            remaining.delete(id)
+        }
     }
+    return [...ordered, ...remaining.values()]
 }

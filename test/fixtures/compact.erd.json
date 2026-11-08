@@ -1,0 +1,201 @@
+{
+    "$schema": "https://raw.githubusercontent.com/dineug/erd-editor/main/json-schema/schema.json",
+    "version": "3.0.0",
+    "settings": {
+        "originX": -103.75,
+        "originY": 212.5,
+        "zoomLevel": 1.4,
+        "show": 1023,
+        "database": 16,
+        "databaseName": "Store",
+        "canvasType": "ERD",
+        "language": 4096,
+        "tableNameCase": 8,
+        "columnNameCase": 1,
+        "bracketType": 2,
+        "relationshipDataTypeSync": false,
+        "columnOrder": [128, 1, 2, 256, 4, 8, 16, 32, 64],
+        "maxWidthComment": 220,
+        "lockSettings": 127,
+        "ddlScripts": {
+            "before": "CREATE EXTENSION IF NOT EXISTS pgcrypto;",
+            "after": "-- End"
+        },
+        "nameViewMode": "both"
+    },
+    "doc": {
+        "tableIds": ["post-table", "user-table"],
+        "relationshipIds": ["user-posts"],
+        "indexIds": ["title-index"],
+        "memoIds": ["status-memo"],
+        "tableGroupIds": ["group-1"]
+    },
+    "collections": {
+        "tableEntities": {
+            "user-table": {
+                "id": "user-table",
+                "name": "users",
+                "logicalName": "Usuarios",
+                "groupId": "group-1",
+                "nameDerived": true,
+                "columnIds": [
+                    "user-id",
+                    "user-email",
+                    "user-display-name",
+                    "user-status"
+                ],
+                "ui": { "x": 1065.3577, "y": 684.8627, "color": "#aabbcc" }
+            },
+            "post-table": {
+                "id": "post-table",
+                "name": "posts",
+                "columnIds": [
+                    "post-id",
+                    "post-title",
+                    "post-tags",
+                    "post-author"
+                ],
+                "ui": { "x": 125.25, "y": -84.75 }
+            }
+        },
+        "tableColumnEntities": {
+            "user-id": {
+                "id": "user-id",
+                "tableId": "user-table",
+                "name": "id",
+                "dataType": "text",
+                "default": "cuid()",
+                "options": 14
+            },
+            "user-email": {
+                "id": "user-email",
+                "tableId": "user-table",
+                "name": "email",
+                "logicalName": "Correo",
+                "domainId": "domain-1",
+                "dataType": "text",
+                "options": 28
+            },
+            "user-display-name": {
+                "id": "user-display-name",
+                "tableId": "user-table",
+                "name": "display_name",
+                "dataType": "text?",
+                "options": 0
+            },
+            "user-status": {
+                "id": "user-status",
+                "tableId": "user-table",
+                "name": "status",
+                "dataType": "USER_STATUS",
+                "default": "ACTIVE",
+                "options": 8
+            },
+            "post-id": {
+                "id": "post-id",
+                "tableId": "post-table",
+                "name": "id",
+                "dataType": "integer",
+                "default": "autoincrement()",
+                "options": 15
+            },
+            "post-title": {
+                "id": "post-title",
+                "tableId": "post-table",
+                "name": "title",
+                "dataType": "varchar(120)",
+                "options": 8
+            },
+            "post-tags": {
+                "id": "post-tags",
+                "tableId": "post-table",
+                "name": "tags",
+                "dataType": "text[]",
+                "default": "[]",
+                "options": 8
+            },
+            "post-author": {
+                "id": "post-author",
+                "tableId": "post-table",
+                "name": "author_id",
+                "dataType": "text",
+                "options": 8
+            }
+        },
+        "relationshipEntities": {
+            "user-posts": {
+                "id": "user-posts",
+                "relationshipType": 16,
+                "onDelete": 4,
+                "onUpdate": 2,
+                "start": { "tableId": "user-table", "columnIds": ["user-id"] },
+                "end": { "tableId": "post-table", "columnIds": ["post-author"] }
+            }
+        },
+        "indexEntities": {
+            "title-index": {
+                "id": "title-index",
+                "name": "posts_title_idx",
+                "tableId": "post-table",
+                "indexColumnIds": ["title-index-column"],
+                "unique": false
+            }
+        },
+        "indexColumnEntities": {
+            "title-index-column": {
+                "id": "title-index-column",
+                "indexId": "title-index",
+                "columnId": "post-title",
+                "orderType": 2
+            }
+        },
+        "memoEntities": {
+            "status-memo": {
+                "id": "status-memo",
+                "value": "USER_STATUS\nACTIVE\nDISABLED",
+                "ui": {
+                    "x": -44.5,
+                    "y": 88.25,
+                    "width": 320,
+                    "height": 240,
+                    "color": "#ddeeff"
+                }
+            }
+        },
+        "tableGroupEntities": {
+            "group-1": {
+                "id": "group-1",
+                "name": "Accounts",
+                "color": "#123456",
+                "ui": { "x": 10, "y": 20, "width": 1500, "height": 900 }
+            }
+        },
+        "wordEntities": {
+            "fields": [
+                "id",
+                "name",
+                "abbreviation",
+                "englishName",
+                "description",
+                "synonyms",
+                "forbiddenWords"
+            ],
+            "rows": [["word-1", "Correo", "email"]]
+        },
+        "termEntities": {
+            "fields": [
+                "id",
+                "name",
+                "physicalName",
+                "domainId",
+                "description",
+                "synonyms"
+            ],
+            "rows": [["term-1", "Correo", "email", "domain-1"]]
+        },
+        "domainEntities": {
+            "fields": ["id", "name", "category", "dataType", "description"],
+            "rows": [["domain-1", "Email", "Text", "text"]]
+        }
+    }
+}

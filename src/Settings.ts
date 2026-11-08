@@ -2,52 +2,34 @@ import { DATABASE_BY_PROVIDER } from './constants.js'
 import type { Settings as SettingsSchema } from './types.js'
 
 export class Settings {
-    readonly width: number
-    readonly height: number
-    readonly scrollTop: number
-    readonly scrollLeft: number
-    readonly zoomLevel: number
-    readonly show = 511
-    readonly database: number
-    readonly databaseName: string
-    readonly canvasType = 'ERD' as const
-    readonly language = 16
-    readonly tableNameCase = 4
-    readonly columnNameCase = 2
-    readonly bracketType = 1
-    readonly relationshipDataTypeSync = true
-    readonly relationshipOptimization = false
-    readonly columnOrder = [1, 2, 4, 8, 16, 32, 64]
-    readonly maxWidthComment = -1
-    readonly ignoreSaveSettings = 3
+    #value: SettingsSchema
 
-    constructor(
-        provider: string,
-        previous?: Partial<SettingsSchema>,
-        dimensions = { width: 2000, height: 2000 },
-    ) {
-        this.width = clamp(
-            Math.max(previous?.width ?? 0, dimensions.width),
-            2000,
-            20000,
-        )
-        this.height = clamp(
-            Math.max(previous?.height ?? 0, dimensions.height),
-            2000,
-            20000,
-        )
-        this.scrollTop = previous?.scrollTop ?? 0
-        this.scrollLeft = previous?.scrollLeft ?? 0
-        this.zoomLevel = clamp(previous?.zoomLevel ?? 1, 0.1, 1)
-        this.database = DATABASE_BY_PROVIDER[provider] ?? 16
-        this.databaseName = previous?.databaseName ?? ''
+    constructor(provider: string, previous?: Partial<SettingsSchema>) {
+        this.#value = {
+            originX: previous?.originX ?? 0,
+            originY: previous?.originY ?? 0,
+            zoomLevel: Math.min(Math.max(previous?.zoomLevel ?? 1, 0.1), 1.5),
+            show: previous?.show ?? 511,
+            database: DATABASE_BY_PROVIDER[provider] ?? 16,
+            databaseName: previous?.databaseName ?? '',
+            canvasType: previous?.canvasType ?? 'ERD',
+            language: previous?.language ?? 16,
+            tableNameCase: previous?.tableNameCase ?? 4,
+            columnNameCase: previous?.columnNameCase ?? 2,
+            bracketType: previous?.bracketType ?? 1,
+            relationshipDataTypeSync:
+                previous?.relationshipDataTypeSync ?? true,
+            columnOrder: previous?.columnOrder ?? [1, 2, 4, 8, 16, 32, 64],
+            maxWidthComment: previous?.maxWidthComment ?? -1,
+            lockSettings: previous?.lockSettings ?? 63,
+            ...(previous?.ddlScripts && { ddlScripts: previous.ddlScripts }),
+            ...(previous?.nameViewMode && {
+                nameViewMode: previous.nameViewMode,
+            }),
+        }
     }
 
     toJSON(): SettingsSchema {
-        return { ...this }
+        return { ...this.#value }
     }
-}
-
-function clamp(value: number, minimum: number, maximum: number) {
-    return Math.min(Math.max(value, minimum), maximum)
 }
