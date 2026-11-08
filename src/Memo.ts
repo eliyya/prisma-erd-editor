@@ -1,7 +1,6 @@
 import type { DMMF } from '@prisma/generator-helper'
 
 import { genId } from './id.js'
-import { Meta } from './Meta.js'
 import type { MemoEntity } from './types.js'
 
 export class Memo {
@@ -40,14 +39,14 @@ export class Memo {
                 y:
                     this.#previous?.ui.y ??
                     1900 + Math.floor(this.#index / 6) * 220,
-                zIndex: this.#previous?.ui.zIndex ?? 1,
                 width: this.#previous?.ui.width ?? 180,
                 height:
                     this.#previous?.ui.height ??
                     Math.max(120, 60 + this.#data.values.length * 22),
-                color: this.#previous?.ui.color ?? '',
+                ...(this.#previous?.ui.color && {
+                    color: this.#previous.ui.color,
+                }),
             },
-            meta: new Meta(this.#previous?.meta),
         }
     }
 }

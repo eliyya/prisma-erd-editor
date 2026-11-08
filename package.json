@@ -1,9 +1,9 @@
 {
     "name": "prisma-erd-editor",
-    "version": "0.1.1",
+    "version": "0.2.2",
     "description": "Prisma generator for ERD Editor compatible .erd diagrams",
     "type": "module",
-    "packageManager": "pnpm@12.3.4",
+    "packageManager": "pnpm@12.18.0",
     "main": "./dist/api.js",
     "types": "./dist/api.d.ts",
     "exports": {
@@ -22,11 +22,13 @@
     ],
     "scripts": {
         "build": "tsc",
-        "test": "pnpm run build && node --test",
-        "lint": "eslint .",
-        "lint:fix": "eslint . --fix",
-        "format": "prettier --write \"**/*.{ts,js,json,md}\" --ignore-path .gitignore",
-        "verify": "pnpm run lint && pnpm run test",
+        "test": "pnpm run build && vp test run",
+        "lint": "vp lint .",
+        "lint:fix": "vp lint . --fix",
+        "format": "vp fmt . --write",
+        "format:check": "vp fmt . --check",
+        "check": "vp check",
+        "verify": "pnpm run build && vp check && vp test run",
         "prepublishOnly": "pnpm run verify"
     },
     "author": "",
@@ -40,23 +42,24 @@
     },
     "homepage": "https://github.com/eliyya/prisma-erd-editor#readme",
     "devDependencies": {
-        "@eslint/js": "9.35.0",
-        "@types/node": "24.3.3",
-        "eslint": "9.35.0",
-        "eslint-config-prettier": "10.1.8",
-        "eslint-import-resolver-typescript": "4.4.4",
-        "eslint-plugin-import": "2.32.0",
-        "eslint-plugin-prettier": "5.5.4",
-        "eslint-plugin-security": "3.0.1",
-        "prettier": "3.6.2",
-        "prisma": "6.16.1",
-        "typescript": "6.0.3",
-        "typescript-eslint": "8.61.0"
+        "@types/node": "26.6.6",
+        "ajv": "8.20.0",
+        "prisma": "7.10.1",
+        "typescript": "7.0.2",
+        "vite-plus": "1.5.0"
     },
     "dependencies": {
-        "@prisma/generator-helper": "6.16.1"
+        "@eliyya/flagged-bitfield": "1.1.1",
+        "@prisma/generator-helper": "7.10.1"
     },
     "engines": {
         "node": ">=20.19"
+    },
+    "devEngines": {
+        "runtime": {
+            "name": "node",
+            "version": "26.13.0",
+            "onFail": "download"
+        }
     }
 }

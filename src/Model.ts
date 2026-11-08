@@ -2,7 +2,6 @@ import type { DMMF } from '@prisma/generator-helper'
 
 import { Column } from './Field.js'
 import { genId } from './id.js'
-import { Meta } from './Meta.js'
 import type {
     TableColumnEntity,
     TableEntity,
@@ -62,20 +61,23 @@ export class Model {
         return {
             id: this.id,
             name: this.name,
-            comment: this.data.documentation ?? '',
+            ...(this.data.documentation && {
+                comment: this.data.documentation,
+            }),
+            ...(this.#previous?.logicalName && {
+                logicalName: this.#previous.logicalName,
+            }),
+            ...(this.#previous?.groupId && {
+                groupId: this.#previous.groupId,
+            }),
             columnIds,
-            seqColumnIds: columnIds,
             ui: {
                 x: this.position.x,
                 y: this.position.y,
-                zIndex: this.#previous?.ui.zIndex ?? 2,
-                widthName:
-                    this.#previous?.ui.widthName ??
-                    Math.max(60, Math.ceil(this.name.length * 5.5)),
-                widthComment: this.#previous?.ui.widthComment ?? 60,
-                color: this.#previous?.ui.color ?? '',
+                ...(this.#previous?.ui.color && {
+                    color: this.#previous.ui.color,
+                }),
             },
-            meta: new Meta(this.#previous?.meta),
         }
     }
 }

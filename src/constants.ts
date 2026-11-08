@@ -83,17 +83,14 @@ export const RelationshipType = {
     oneN: 16,
 } as const
 
-export const StartRelationshipType = {
-    ring: 1,
-    dash: 2,
-} as const
-
-export const Direction = {
-    left: 1,
-    right: 2,
-    top: 4,
-    bottom: 8,
-} as const
+export const ReferentialAction: Readonly<Record<string, number>> = {
+    None: 1,
+    NoAction: 2,
+    Cascade: 4,
+    SetNull: 8,
+    SetDefault: 16,
+    Restrict: 32,
+}
 
 export const IndexOrder = {
     asc: 1,

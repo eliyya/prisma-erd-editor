@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
+import { isDeepStrictEqual } from 'node:util'
 
 import pgh from '@prisma/generator-helper'
 
@@ -30,7 +31,7 @@ pgh.generatorHandler({
             previous,
         }).build()
 
-        if (previous && schemasAreEquivalent(previous, schema)) return
+        if (previous && isDeepStrictEqual(previous, schema)) return
 
         await mkdir(dirname(output), { recursive: true })
         await writeFile(output, `${JSON.stringify(schema, null, 2)}\n`, 'utf8')
@@ -47,7 +48,8 @@ async function readExistingSchema(
             value !== null &&
             'version' in value &&
             value.version === '3.0.0' &&
-            'collections' in value
+            'settings' in value &&
+            'doc' in value
         ) {
             return value as ErdEditorSchema
         }
@@ -63,17 +65,4 @@ async function readExistingSchema(
         throw error
     }
     return
-}
-
-function schemasAreEquivalent(
-    previous: ErdEditorSchema,
-    generated: ErdEditorSchema,
-) {
-    return stableSchemaValue(previous) === stableSchemaValue(generated)
-}
-
-function stableSchemaValue(schema: ErdEditorSchema) {
-    return JSON.stringify(schema, (key, value: unknown) =>
-        key === 'updateAt' || key === 'createAt' ? undefined : value,
-    )
 }

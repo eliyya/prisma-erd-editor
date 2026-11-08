@@ -2,7 +2,6 @@ import type { DMMF } from '@prisma/generator-helper'
 
 import { IndexOrder } from './constants.js'
 import { genId } from './id.js'
-import { Meta } from './Meta.js'
 import type { Model } from './Model.js'
 import type { IndexColumnEntity, IndexEntity } from './types.js'
 
@@ -12,7 +11,6 @@ export class DatabaseIndex {
     readonly columns: DatabaseIndexColumn[]
     #data: Readonly<DMMF.Index>
     #model: Model
-    #previous: IndexEntity | undefined
 
     constructor(
         model: Model,
@@ -21,7 +19,6 @@ export class DatabaseIndex {
     ) {
         this.#model = model
         this.#data = data
-        this.#previous = previous
         this.name =
             data.dbName ??
             data.name ??
@@ -46,9 +43,7 @@ export class DatabaseIndex {
             name: this.name,
             tableId: this.#model.id,
             indexColumnIds,
-            seqIndexColumnIds: indexColumnIds,
             unique: this.#data.type === 'unique',
-            meta: new Meta(this.#previous?.meta),
         }
     }
 }
@@ -87,10 +82,9 @@ class DatabaseIndexColumn {
             indexId: this.#index.id,
             columnId: this.#columnId,
             orderType:
-                this.#data.sortOrder?.toLowerCase() === 'desc' ?
-                    IndexOrder.desc
-                :   IndexOrder.asc,
-            meta: new Meta(),
+                this.#data.sortOrder?.toLowerCase() === 'desc'
+                    ? IndexOrder.desc
+                    : IndexOrder.asc,
         }
     }
 }
